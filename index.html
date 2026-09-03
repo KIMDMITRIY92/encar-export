@@ -85,6 +85,21 @@ input[readonly]{background:#F1EFE8;color:var(--ink);font-weight:600}
      Файл лежит на том же домене, поэтому читается всегда — в отличие от
      прямых запросов к сайтам центробанков, которые браузер блокирует. -->
 <script src="fx.js" onerror="window.ENCAR_FX=null"></script>
+<script>
+/* Момент, когда курс был снят с сайта центробанка рабочим процессом fx.yml.
+   Показывается в подписи курса, чтобы время было видно во всех трёх странах,
+   а не только там, где браузеру удался прямой запрос (правило владельца
+   03.09.2026: курс показывается на момент запроса расчёта). */
+window.__fxStamp = function(){
+  try{
+    var t = window.ENCAR_FX && window.ENCAR_FX.checked_at;
+    if(!t) return "";
+    var d = new Date(t); if(isNaN(d)) return "";
+    var p = function(n){return ("0"+n).slice(-2);};
+    return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear()+", "+p(d.getHours())+":"+p(d.getMinutes());
+  }catch(e){ return ""; }
+};
+</script>
 </head>
 <body>
 <div id="top">
@@ -96,7 +111,7 @@ input[readonly]{background:#F1EFE8;color:var(--ink);font-weight:600}
     <button data-c="by">&#127463;&#127486; Беларусь</button>
   </div>
 </div>
-<div id="note"><span>&#9888;&#65039;</span><span><b>Курс здесь не подгружается автоматически</b> — площадка публикации блокирует любые внешние запросы. Это ограничение страницы, а не расчёта: поля курса по России и Беларуси открыты — впишите текущие значения вручную. По Казахстану ручной ввод запрещён: курс принимается только от Нацбанка РК. Ссылки на источники — под каждым блоком курса. Автозагрузка включается сама, когда файл размещён на своём хостинге.</span></div>
+<div id="note"><span>&#9888;&#65039;</span><span><b>Курс валют берётся на момент расчёта</b> &mdash; напрямую с сайта центрального банка каждой страны. Дата и время, на которые взят курс, стоят в подписи у полей курса; если получить курс не удалось, подпись об этом предупредит, и такой расчёт клиенту не выдаётся. По Казахстану ручной ввод запрещён: курс принимается только от Нацбанка РК. Ссылки на источники &mdash; под каждым блоком курса.</span></div>
 <section id="sec-rf">
 <div class="wrap">
   <div class="eyebrow">ENCAR EXPORT · РФ · методика 02.09.2026 · ред. патча 1.1</div>
@@ -550,9 +565,9 @@ function loadRates(d){
   if(FX){$("krwr").value=FX.krw;$("usd").value=FX.usd;$("eur").value=FX.eur;
     var fxD=window.ENCAR_FX.date||"";
     if(fxD===todayDMY()){RATE_SRC="fx";setEditable(false);
-      b.textContent="Курс · "+fxD;b.className="rbadge ok";}
+      b.textContent="Курс · "+(window.__fxStamp()||fxD);b.className="rbadge ok";}
     else{RATE_SRC="fx-stale";setEditable(true);
-      b.textContent="⚠ курс от "+fxD+", не на сегодня";b.className="rbadge warn";}
+      b.textContent="⚠ курс от "+(window.__fxStamp()||fxD)+", не на сегодня";b.className="rbadge warn";}
     calc();}
   var iso=todayISO(); /* курс — строго на момент запроса расчёта (правило владельца 03.09.2026) */
   var official="https://www.cbr.ru/scripts/XML_daily.asp?date_req="+ddmmyyyy(iso);
@@ -686,7 +701,7 @@ function calc(){
     f+='<div class="flag">🔴 Льготный утильсбор не положен ('+why.join("; ")+') → коммерческий '+rub(util)+'.</div>';}
   if(!pers){f+='<div class="flag amber">ℹ Коммерческая ветка: ступени возраста иные — до 5 / 5–7 / старше 7 лет. Ставка акциза подтверждена методикой только для 112,5–150 кВт (613 ₽/л.с.); вне диапазона — сверить по ст. 193 НК РФ.</div>';
     if(ettMin(cc,false)===null)f+='<div class="flag">🔴 Объём '+cc+' см³ вне подтверждённых кодов 8703 23 (1500–3000 см³). Минимальная ставка ЕТТ ТРЕБУЕТ ПРОВЕРКИ — взято 0,44 €/см³.</div>';}
-  if(fxPad)f+='<div class="flag amber">ℹ К закупу и фрахту добавлено +'+$("fxAdd").value+'% к курсу ЦБ РФ ('+rub(fxPad)+'). Таможенные платежи посчитаны по официальному курсу.</div>';
+  /* Надбавка скрыта из разбивки по решению владельца 03.09.2026 (Р-3.4). Расчёт не изменён: надбавка по-прежнему применяется к закупу и фрахту, таможенные платежи — по официальному курсу. */
   f+='<div class="flag info">Сумма предварительная; финальную определяет таможенный орган. Источники: ЕЭК № 107 (ред. 24.02.2026), ЕЭК № 80 (ред. 22.01.2026), ЕЭК № 74 п. 5, ПП РФ № 1291 (ред. 06.02.2026), ПП РФ № 1637/№ 1638, ФЗ № 425-ФЗ (НДС 22%). Курс валют — cbr.ru, на момент расчёта.</div>';
   $("flags").innerHTML=f;
   $("foot").textContent="Момент выпуска: "+madeMoment().toLocaleDateString("ru-RU")+" · дата декларации: "+declDate().toLocaleDateString("ru-RU")+" · K утиля льгот./комм. = "+kL+" / "+kC;
@@ -760,9 +775,9 @@ function loadRates(){
   if(FX){$("fx").value=FX.usd;$("fxe").value=FX.eur;$("fxk").value=FX.krw100;
     const fxD=window.ENCAR_FX.date||"";
     if(fxD===todayDMY()){RATE_SRC="fx";setEditable(false);
-      b.textContent="Курс · "+fxD;b.className="rbadge ok";}
+      b.textContent="Курс · "+(window.__fxStamp()||fxD);b.className="rbadge ok";}
     else{RATE_SRC="fx-stale";setEditable(true);
-      b.textContent="⚠ курс НБ РК от "+fxD+", не на сегодня";b.className="rbadge warn";}
+      b.textContent="⚠ курс НБ РК от "+(window.__fxStamp()||fxD)+", не на сегодня";b.className="rbadge warn";}
     calc();}
   const iso=todayISO(); /* курс — строго на момент запроса расчёта */
   /* Два канала НБ РК: сначала выдача на дату, при отказе — общий поток курсов.
@@ -889,7 +904,7 @@ function calc(){
   $("verdict").innerHTML='<div class="vt">'+vt+(pct!==null?" · "+pct.toFixed(1)+"%":"")+'</div><div class="vm">'+
     (pers?"физлицо, личное — единая ставка ЕАЭС, НДС не начисляется":(requal?"ПЕРЕКВАЛИФИКАЦИЯ: 2-е авто за 12 мес — коммерческий контур":"юрлицо — ЕТТ + акциз + НДС 16%"))+" · возраст "+a.toFixed(2)+" г. ("+bandName(band)+")</div>";
   let f="";
-  if(fxPad)f+='<div class="flag amber">ℹ К закупу и фрахту добавлено +'+$("fxAdd").value+'% к курсу НБ РК ('+tg_(fxPad)+'). Таможенная база и платежи посчитаны по официальному курсу.</div>';
+  /* Надбавка скрыта из разбивки по решению владельца 03.09.2026 (Р-3.4). Расчёт не изменён: надбавка по-прежнему применяется к закупу и фрахту, таможенные платежи — по официальному курсу. */
   if(RATE_SRC==="fx-stale")f+='<div class="flag">🔴 Курс НБ РК на момент расчёта не получен — показан курс от '+((window.ENCAR_FX&&window.ENCAR_FX.date)||"")+'. Ручной ввод по Казахстану запрещён: курс принимается только от Нацбанка. Нажмите на подпись курса, чтобы запросить заново. Такой расчёт клиенту не выдаётся.</div>';
   if(RATE_SRC==="fallback")f+='<div class="flag">🔴 Курс НБ РК не получен ни с одного канала — подставлен сохранённый на '+FB.date+'. Ручной ввод по Казахстану запрещён. Нажмите на подпись курса, чтобы запросить заново; расчёт клиенту не выдаётся.</div>';
   if(state.mc==="no"){const y=+$("mYear").value||0,mm=+$("mMonth").value||7;
@@ -947,9 +962,9 @@ function loadRates(){
   if(FXb){$("usdby").value=FXb.usd;$("eurby").value=FXb.eur;$("krwby").value=FXb.krw;
     const fxD=window.ENCAR_FX.date||"";
     if(fxD===todayDMY()){RATE_SRC="fx";setEditable(false);
-      b.textContent="Курс · "+fxD;b.className="rbadge ok";}
+      b.textContent="Курс · "+(window.__fxStamp()||fxD);b.className="rbadge ok";}
     else{RATE_SRC="fx-stale";setEditable(true);
-      b.textContent="⚠ курс от "+fxD+", не на сегодня";b.className="rbadge warn";}
+      b.textContent="⚠ курс от "+(window.__fxStamp()||fxD)+", не на сегодня";b.className="rbadge warn";}
     calc();}
   const d=$("rdate").value||todayISO();
   /* Два хоста одного и того же API НБ РБ: основной и запасной. */
@@ -1040,7 +1055,7 @@ function calc(){
   $("verdict").innerHTML='<div class="vt">'+vt+(pct!==null?" · "+pct.toFixed(1)+"%":"")+'</div><div class="vm">'+
     (pers?"физлицо — единая ставка ЕАЭС, НДС не начисляется":"юрлицо — ЕТТ + НДС 20%")+" · возраст "+a.toFixed(2)+" г. ("+bandName(band)+")</div>";
   let f='';
-  if(fxPad)f+='<div class="flag amber">ℹ К закупу и фрахту добавлено +'+$("fxAdd").value+'% к курсу НБ РБ ('+br_(fxPad)+'). Таможенные платежи посчитаны по официальному курсу.</div>';
+  /* Надбавка скрыта из разбивки по решению владельца 03.09.2026 (Р-3.4). Расчёт не изменён: надбавка по-прежнему применяется к закупу и фрахту, таможенные платежи — по официальному курсу. */
   f+='<div class="flag info">✅ База утильсбора — объём двигателя и статус получателя (ПП Совмина РБ № 195 от 23.04.2026, прил. 2, сверено по pravo.by 02.09.2026). Логика «по мощности» — только для самоходных машин, на легковые не переносится.</div>';
   if(RATE_SRC==="fx-stale")f+='<div class="flag">🔴 Курс не удалось получить на момент расчёта — показан курс от '+((window.ENCAR_FX&&window.ENCAR_FX.date)||"")+'. По правилу компании курс берётся на момент запроса: обновите его по ссылке на центробанк и впишите вручную. Такой расчёт клиенту не выдаётся.</div>';
   if(RATE_SRC==="fallback")f+='<div class="flag">🔴 Курс валют не загрузился — подставлен сохранённый на '+FB.date+'.</div>';
