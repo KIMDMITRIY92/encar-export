@@ -90,6 +90,21 @@ input[readonly]{background:#F1EFE8;color:var(--ink);font-weight:600}
    Показывается в подписи курса, чтобы время было видно во всех трёх странах,
    а не только там, где браузеру удался прямой запрос (правило владельца
    03.09.2026: курс показывается на момент запроса расчёта). */
+/* Курс считается актуальным по ВОЗРАСТУ отметки снятия, а не по совпадению
+   строки даты. Раньше сравнивалась дата файла (пишется по UTC) с датой в
+   браузере: в Корее (UTC+9) после полуночи они расходятся, и свежий курс,
+   снятый двадцать минут назад, помечался «не на сегодня». По Казахстану это
+   означало полный отказ считать — ручной ввод там запрещён. Порог 30 часов:
+   центробанки публикуют раз в сутки, процесс обновления идёт ежедневно,
+   запас покрывает задержку запуска. */
+window.__fxFresh = function(){
+  try{
+    var t = window.ENCAR_FX && window.ENCAR_FX.checked_at;
+    if(!t) return false;
+    var d = new Date(t); if(isNaN(d)) return false;
+    return (Date.now() - d.getTime()) < 30*3600*1000;
+  }catch(e){ return false; }
+};
 window.__fxStamp = function(){
   try{
     var t = window.ENCAR_FX && window.ENCAR_FX.checked_at;
@@ -564,10 +579,10 @@ function loadRates(d){
   var FX=window.ENCAR_FX&&window.ENCAR_FX.rf;
   if(FX){$("krwr").value=FX.krw;$("usd").value=FX.usd;$("eur").value=FX.eur;
     var fxD=window.ENCAR_FX.date||"";
-    if(fxD===todayDMY()){RATE_SRC="fx";setEditable(false);
+    if(window.__fxFresh()){RATE_SRC="fx";setEditable(false);
       b.textContent="Курс · "+(window.__fxStamp()||fxD);b.className="rbadge ok";}
     else{RATE_SRC="fx-stale";setEditable(true);
-      b.textContent="⚠ курс от "+(window.__fxStamp()||fxD)+", не на сегодня";b.className="rbadge warn";}
+      b.textContent="⚠ курс устарел · "+(window.__fxStamp()||fxD);b.className="rbadge warn";}
     calc();}
   var iso=todayISO(); /* курс — строго на момент запроса расчёта (правило владельца 03.09.2026) */
   var official="https://www.cbr.ru/scripts/XML_daily.asp?date_req="+ddmmyyyy(iso);
@@ -774,10 +789,10 @@ function loadRates(){
   const FX=window.ENCAR_FX&&window.ENCAR_FX.kz;
   if(FX){$("fx").value=FX.usd;$("fxe").value=FX.eur;$("fxk").value=FX.krw100;
     const fxD=window.ENCAR_FX.date||"";
-    if(fxD===todayDMY()){RATE_SRC="fx";setEditable(false);
+    if(window.__fxFresh()){RATE_SRC="fx";setEditable(false);
       b.textContent="Курс · "+(window.__fxStamp()||fxD);b.className="rbadge ok";}
     else{RATE_SRC="fx-stale";setEditable(true);
-      b.textContent="⚠ курс НБ РК от "+(window.__fxStamp()||fxD)+", не на сегодня";b.className="rbadge warn";}
+      b.textContent="⚠ курс НБ РК устарел · "+(window.__fxStamp()||fxD);b.className="rbadge warn";}
     calc();}
   const iso=todayISO(); /* курс — строго на момент запроса расчёта */
   /* Два канала НБ РК: сначала выдача на дату, при отказе — общий поток курсов.
@@ -961,10 +976,10 @@ function loadRates(){
   const FXb=window.ENCAR_FX&&window.ENCAR_FX.by;
   if(FXb){$("usdby").value=FXb.usd;$("eurby").value=FXb.eur;$("krwby").value=FXb.krw;
     const fxD=window.ENCAR_FX.date||"";
-    if(fxD===todayDMY()){RATE_SRC="fx";setEditable(false);
+    if(window.__fxFresh()){RATE_SRC="fx";setEditable(false);
       b.textContent="Курс · "+(window.__fxStamp()||fxD);b.className="rbadge ok";}
     else{RATE_SRC="fx-stale";setEditable(true);
-      b.textContent="⚠ курс от "+(window.__fxStamp()||fxD)+", не на сегодня";b.className="rbadge warn";}
+      b.textContent="⚠ курс устарел · "+(window.__fxStamp()||fxD);b.className="rbadge warn";}
     calc();}
   const d=$("rdate").value||todayISO();
   /* Два хоста одного и того же API НБ РБ: основной и запасной. */
