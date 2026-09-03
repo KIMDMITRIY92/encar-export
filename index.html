@@ -584,6 +584,7 @@ function loadRates(d){
     else{RATE_SRC="fx-stale";setEditable(true);
       b.textContent="⚠ курс устарел · "+(window.__fxStamp()||fxD);b.className="rbadge warn";}
     calc();}
+  if(RATE_SRC==="fx")return;  /* свежий файл с официального адреса ЦБ главнее живого запроса — решение владельца 04.09.2026 (вариант A) */
   var iso=todayISO(); /* курс — строго на момент запроса расчёта (правило владельца 03.09.2026) */
   var official="https://www.cbr.ru/scripts/XML_daily.asp?date_req="+ddmmyyyy(iso);
   var p=iso.split("-");
@@ -794,6 +795,7 @@ function loadRates(){
     else{RATE_SRC="fx-stale";setEditable(true);
       b.textContent="⚠ курс НБ РК устарел · "+(window.__fxStamp()||fxD);b.className="rbadge warn";}
     calc();}
+  if(RATE_SRC==="fx")return;  /* свежий файл с официального адреса ЦБ главнее живого запроса — решение владельца 04.09.2026 (вариант A) */
   const iso=todayISO(); /* курс — строго на момент запроса расчёта */
   /* Два канала НБ РК: сначала выдача на дату, при отказе — общий поток курсов.
      Оба принадлежат нацбанку, кросс-курсы не используются. */
@@ -981,6 +983,7 @@ function loadRates(){
     else{RATE_SRC="fx-stale";setEditable(true);
       b.textContent="⚠ курс устарел · "+(window.__fxStamp()||fxD);b.className="rbadge warn";}
     calc();}
+  if(RATE_SRC==="fx")return;  /* свежий файл с официального адреса ЦБ главнее живого запроса — решение владельца 04.09.2026 (вариант A) */
   const d=$("rdate").value||todayISO();
   /* Два хоста одного и того же API НБ РБ: основной и запасной. */
   const byGet=function(per){
