@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<title>Калькулятор ввоза ENCAR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+:root{--canvas:#E4E7E4;--panel:#FBFAF6;--ink:#1C2226;--ink2:#4A5257;--mut:#7C837F;--line:#D5D8CF;--teal:#0D6E68;--teal-d:#0A544F;--g:#2E7D32;--a:#C0891C;--r:#B23B3B;--g-bg:#E6F0E4;--a-bg:#F6ECD6;--r-bg:#F3DEDC;--shadow:0 1px 0 #fff inset,0 1px 2px rgba(28,34,38,.06),0 8px 24px -18px rgba(28,34,38,.4);}
+*{box-sizing:border-box}
+body{margin:0;background:var(--canvas);color:var(--ink);font-family:Inter,system-ui,sans-serif;padding:18px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:1060px;margin:0 auto}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal-d)}
+h1{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:24px;margin:2px 0 8px;letter-spacing:-.01em}
+.modeSel{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:14px}
+.modeSel button{font:inherit;font-size:13px;border:0;background:var(--panel);padding:9px 18px;cursor:pointer;color:var(--ink2)}
+.modeSel button+button{border-left:1px solid var(--line)}
+.modeSel button.on{background:var(--teal);color:#fff;font-weight:700}
+.warn{display:flex;gap:9px;align-items:flex-start;background:var(--a-bg);border:1px solid #E7D3A2;border-left:4px solid var(--a);border-radius:3px;padding:9px 12px;margin:0 0 16px;font-size:12.5px;color:#6B520C}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:16px;box-shadow:var(--shadow)}
+.ctitle{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.ctitle .n{width:20px;height:20px;border-radius:50%;background:var(--teal);color:#fff;font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace}
+.row{display:flex;flex-direction:column;gap:5px;margin-bottom:11px}
+.row label{font-size:12px;color:var(--ink2);display:flex;justify-content:space-between;gap:8px}
+.row label .hint{color:var(--mut);font-family:'IBM Plex Mono',monospace;font-size:10.5px}
+input[type=number],input[type=date],select{font:inherit;font-size:13.5px;padding:7px 9px;border:1px solid var(--line);border-radius:3px;background:#fff;color:var(--ink);width:100%}
+input:focus,select:focus{outline:2px solid var(--teal);outline-offset:-1px;border-color:var(--teal)}
+input[readonly]{background:#F1EFE8;color:var(--ink);font-weight:600}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;width:100%}
+.seg button{flex:1;font:inherit;font-size:11.5px;border:0;background:#fff;padding:7px 5px;cursor:pointer;color:var(--ink2)}
+.seg button+button{border-left:1px solid var(--line)}.seg button.on{background:var(--teal);color:#fff;font-weight:600}
+.rbadge{font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:3px 7px;border-radius:2px;border:1px solid var(--line);color:var(--ink2);background:#fff}
+.rbadge.ok{background:var(--g-bg);border-color:#BFD8BC;color:#245c27}.rbadge.warn{background:var(--a-bg);border-color:#E7D3A2;color:#7a5c10}
+.linkbtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:2px 0 4px}
+.lb{font:inherit;font-size:12px;font-weight:600;text-align:center;text-decoration:none;padding:8px 6px;border-radius:3px;border:1px solid var(--teal);color:var(--teal-d);background:#fff;cursor:pointer}
+.lb:hover{background:var(--teal);color:#fff}
+.verdict{border-radius:5px;padding:14px 16px;margin-bottom:14px;border:1px solid}
+.verdict.g{background:var(--g-bg);border-color:#BFD8BC}.verdict.a{background:var(--a-bg);border-color:#E7D3A2}.verdict.r{background:var(--r-bg);border-color:#E4BEBB}.verdict.x{background:#F1EFE8;border-color:var(--line)}
+.verdict .vt{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:19px}.verdict .vm{font-size:12.5px;margin-top:3px;color:var(--ink2)}
+.line{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-top:1px solid #ECEBE3;font-size:13px}
+.line:first-of-type{border-top:0}.line .k{color:var(--ink2)}.line .v{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.line.sub2 .k{padding-left:12px;color:var(--mut);font-size:12px}.line.sub2 .v{color:var(--ink2);font-size:12px}
+.line.total{border-top:2px solid var(--line);margin-top:4px;padding-top:10px}.line.total .k{font-weight:600}.line.total .v{font-size:15px;font-weight:600}
+.line.grand{border-top:2px solid var(--ink)}.line.grand .k{font-weight:700}.line.grand .v{font-size:17px;font-weight:700}
+.pos{color:var(--g)}.neg{color:var(--r)}
+.cmp{margin-top:14px;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+.cmp .h{background:#EFE7DA;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12.5px;padding:8px 10px;color:#5a4409}
+.cmp table{width:100%;border-collapse:collapse;font-size:12px}.cmp td,.cmp th{padding:7px 10px;border-top:1px solid #ECEBE3;text-align:right}
+.cmp th{text-align:left;color:var(--ink2);font-weight:600}.cmp td:first-child,.cmp th:first-child{text-align:left;color:var(--ink2)}.cmp .val{font-family:'IBM Plex Mono',monospace}
+.scale{margin-top:14px}.scale .lab{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut);margin-bottom:6px;font-family:'IBM Plex Mono',monospace}
+.track{position:relative;height:10px;border-radius:6px;background:linear-gradient(90deg,#cfe0d3,#efe1c4,#f0d3d0);border:1px solid var(--line)}
+.mark{position:absolute;top:-5px;width:2px;height:20px;background:var(--teal)}.mark .t{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--teal-d);white-space:nowrap;font-family:'IBM Plex Mono',monospace}
+.flag{font-size:11.5px;color:#8a2f2f;background:var(--r-bg);border:1px solid #E4BEBB;border-radius:3px;padding:6px 9px;margin-top:8px}
+.flag.amber{color:#7a5c10;background:var(--a-bg);border-color:#E7D3A2}.flag.info{color:#4A5257;background:#F1EFE8;border-color:#D5D8CF}
+.foot{margin-top:14px;font-size:11px;color:var(--mut);font-family:'IBM Plex Mono',monospace}
+[hidden]{display:none !important}
+.hidden{display:none !important}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+.chk{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:12px;color:var(--ink2)}
+.draft{background:#F3DEDC;border:1px solid #E4BEBB;border-left:4px solid var(--r);color:#8a2f2f;padding:10px 12px;border-radius:3px;margin:0 0 14px;font-size:12.5px;font-weight:600}
+.src{font-size:10.5px;color:var(--mut);font-family:'IBM Plex Mono',monospace;margin-top:2px}
+
+#top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line);margin:-18px -18px 0}
+#brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;letter-spacing:-.01em;color:var(--teal-d);white-space:nowrap}
+#ver{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--mut);white-space:nowrap}
+#bar{display:flex;gap:6px;margin-left:auto}
+#bar button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--mut);padding:9px 14px;border-radius:8px;cursor:pointer}
+#bar button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+#bar button.on{background:var(--teal);color:#fff;border-color:var(--teal)}
+#note{display:flex;gap:9px;align-items:flex-start;background:var(--a-bg);border-bottom:1px solid #E7D3A2;padding:9px 14px;font-size:12.5px;color:#6B520C;line-height:1.45;margin:0 -18px 16px}
+[id$="-rateStatus"]{cursor:pointer}
+@media(max-width:640px){#bar{width:100%;margin-left:0}#bar button{flex:1;padding:9px 4px;font-size:12px}}
+</style>
+<!-- Справочник ставок. Кладётся рядом с index.html. Если файла нет — работают
+     значения по умолчанию, вшитые в страницу. -->
+<script src="rates.js" onerror="window.ENCAR_RATES_LOCAL=false"></script>
+<!-- Курсы, обновляемые ежедневно рабочим процессом GitHub Actions.
+     Файл лежит на том же домене, поэтому читается всегда — в отличие от
+     прямых запросов к сайтам центробанков, которые браузер блокирует. -->
+<script src="fx.js" onerror="window.ENCAR_FX=null"></script>
+</head>
+<body>
+<div id="top">
+  <span id="brand">ENCAR EXPORT · калькулятор ввоза</span>
+  <span id="ver">ред. 1.7 · 03.09.2026</span>
+  <div id="bar">
+    <button data-c="rf" class="on">&#127479;&#127482; Россия</button>
+    <button data-c="kz">&#127472;&#127487; Казахстан</button>
+    <button data-c="by">&#127463;&#127486; Беларусь</button>
+  </div>
+</div>
+<div id="note"><span>&#9888;&#65039;</span><span><b>Курс здесь не подгружается автоматически</b> — площадка публикации блокирует любые внешние запросы. Это ограничение страницы, а не расчёта: поля курса по России и Беларуси открыты — впишите текущие значения вручную. По Казахстану ручной ввод запрещён: курс принимается только от Нацбанка РК. Ссылки на источники — под каждым блоком курса. Автозагрузка включается сама, когда файл размещён на своём хостинге.</span></div>
+<section id="sec-rf">
+<div class="wrap">
+  <div class="eyebrow">ENCAR EXPORT · РФ · методика 02.09.2026 · ред. патча 1.1</div>
+  <h1>Калькулятор ввоза: Россия</h1>
+  <div class="modeSel" id="rf-modeSel">
+    <button data-mode="deal" class="on">Режим «Сделка» ($ + рынок)</button>
+    <button data-mode="lot">Режим «Лот» (₩)</button>
+  </div>
+
+  <div class="warn"><span>⚠️</span><span>Возраст считается от <b>даты изготовления</b> (ЕЭК № 74, п. 5): месяц не подтверждён — момент выпуска 1 июля. Курс валют — на момент расчёта. Сумма предварительная: финальную определяет таможенный орган.</span></div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="ctitle"><span class="n">1</span>Машина, закуп, курс</div>
+      <div class="two">
+        <div class="row deal-only"><label>Цена в Корее, $ <span class="hint">инвойс</span></label><input type="number" id="rf-buyUsd" value="14000"></div>
+        <div class="row lot-only hidden"><label>Цена лота, ₩ <span class="hint">encar</span></label><input type="number" id="rf-buyKrw" value="18000000"></div>
+        <div class="row"><label>Фрахт Корея→Владивосток, $</label><input type="number" id="rf-log" value="1300"></div>
+      </div>
+      <div class="row"><label>Дата декларации <span class="rbadge" id="rf-rateStatus">загрузка…</span></label><input type="date" id="rf-rdate"></div>
+      <div class="three">
+        <div class="row"><label>₩/1000 <span class="hint">🔒курс</span></label><input type="number" id="rf-krwr" value="63.16" readonly></div>
+        <div class="row"><label>USD→₽ <span class="hint">🔒курс</span></label><input type="number" id="rf-usd" value="86.75" readonly></div>
+        <div class="row"><label>EUR→₽ <span class="hint">🔒курс</span></label><input type="number" id="rf-eur" value="100.60" readonly></div>
+      </div>
+      <div class="row" hidden aria-hidden="true"><input type="number" id="rf-fxAdd" value="4" step="0.5"></div>
+      <div class="src">Курс валют — <a href="https://www.cbr.ru/currency_base/daily/" target="_blank" rel="noopener">cbr.ru</a>, на момент расчёта. Таможенные платежи начисляет таможенный орган по официальному курсу на дату декларации.</div>
+
+      <div class="ctitle" style="margin-top:6px"><span class="n">2</span>Дата изготовления <span class="hint" style="font-weight:400;color:var(--mut)">не первой регистрации</span></div>
+      <div class="two">
+        <div class="row"><label>Год выпуска</label><input type="number" id="rf-mYear" value="2021"></div>
+        <div class="row"><label>Месяц выпуска</label><select id="rf-mMonth"><option value="1">01</option><option value="2">02</option><option value="3">03</option><option value="4">04</option><option value="5">05</option><option value="6">06</option><option value="7">07</option><option value="8">08</option><option value="9">09</option><option value="10">10</option><option value="11" selected>11</option><option value="12">12</option></select></div>
+      </div>
+      <div class="row"><label>Месяц подтверждён документом?</label><div class="seg" id="rf-mcSel"><button data-mc="yes" class="on">Да</button><button data-mc="no">Нет → 1 июля</button></div></div>
+      <div class="row"><label>Тип двигателя</label><div class="seg" id="rf-fuelSel"><button data-fuel="ice" class="on">ДВС</button><button data-fuel="hybrid">Гибрид</button><button data-fuel="ev">Электро</button></div></div>
+      <div class="three">
+        <div class="row"><label>Объём, см³</label><input type="number" id="rf-cc" value="1999"></div>
+        <div class="row"><label>кВт <span class="hint">из СТС</span></label><input type="number" id="rf-kw" value="117.68" step="0.01"></div>
+        <div class="row"><label>л.с. <span class="hint">акциз</span></label><input type="number" id="rf-hp" value="160"></div>
+      </div>
+
+      <div class="ctitle" style="margin-top:6px"><span class="n">3</span>Статус, цель, история</div>
+      <div class="two">
+        <div class="row"><label>Статус получателя</label><div class="seg" id="rf-stSel"><button data-st="personal" class="on">Физлицо</button><button data-st="legal">Юрлицо</button></div></div>
+        <div class="row"><label>Цель ввоза</label><div class="seg" id="rf-puSel"><button data-pu="own" class="on">Личное</button><button data-pu="resale">Перепродажа</button></div></div>
+      </div>
+      <div class="row"><label>Ввозили авто на это лицо за 12 мес?</label><div class="seg" id="rf-imSel"><button data-im="no" class="on">Нет</button><button data-im="yes">Да → льготы нет</button></div></div>
+      <div class="row legal-only hidden"><label>Ставка акциза, ₽ за 1 л.с. <span class="hint">613 при 112,5–150 кВт</span></label><input type="number" id="rf-exRate" value="613"></div>
+
+      <div class="ctitle" style="margin-top:6px"><span class="n">4</span>Оформление и доставка</div>
+      <div class="two">
+        <div class="row"><label>Брокер + ЭПТС + СБКТС, ₽</label><input type="number" id="rf-brk" value="80000"></div>
+        <div class="row"><label>СВХ + перегон, ₽</label><input type="number" id="rf-misc" value="5000"></div>
+      </div>
+      <div class="row"><label>Логистика РФ (Владивосток→город), ₽ <span class="hint">Москва ≈ 200 000</span></label><input type="number" id="rf-rflog" value="200000"></div>
+
+      <div class="deal-only">
+        <div class="ctitle" style="margin-top:6px"><span class="n">5</span>Сравнение с рынком РФ</div>
+        <div class="three">
+          <div class="row"><label>Модель</label><select id="rf-model"></select></div>
+          <div class="row"><label>Год поиск</label><input type="number" id="rf-myear" value="2021"></div>
+          <div class="row"><label>Пробег, км</label><input type="number" id="rf-mileage" value="60000"></div>
+        </div>
+        <div class="linkbtns">
+          <a class="lb" id="rf-lbDrom" target="_blank" rel="noopener">Drom</a>
+          <a class="lb" id="rf-lbAuto" target="_blank" rel="noopener">Auto.ru</a>
+          <a class="lb" id="rf-lbAvito" target="_blank" rel="noopener">Avito</a>
+        </div>
+        <div class="src">Площадки — только для оценки розницы. Источником ставок не являются.</div>
+        <div class="row" style="margin-top:6px"><label>Рыночная цена в РФ, ₽</label><input type="number" id="rf-market" value="0"></div>
+      </div>
+      <div class="lot-only hidden">
+        <div class="ctitle" style="margin-top:6px"><span class="n">5</span>Наценка</div>
+        <div class="row"><label>Наценка (маржа), ₽</label><input type="number" id="rf-markupRub" value="0"></div>
+      </div>
+      <input type="hidden" id="rf-markup" value="0">
+    </div>
+
+    <div class="card">
+      <div class="ctitle"><span class="n">₽</span>Результат</div>
+      <div id="rf-verdict" class="verdict x"><div class="vt">—</div><div class="vm">введите данные</div></div>
+      <div id="rf-breakdown"></div>
+      <div id="rf-flags"></div>
+      <div id="rf-extra"></div>
+      <div class="foot" id="rf-foot"></div>
+    </div>
+  </div>
+</div>
+
+</section>
+<section id="sec-kz" hidden>
+<div class="wrap">
+  <div class="eyebrow">ENCAR EXPORT · Казахстан · методика 02.09.2026 · ред. патча 1.1</div>
+  <h1>Калькулятор ввоза: Казахстан</h1>
+
+  <div class="warn"><span>⚠️</span><span>Возраст — от <b>даты изготовления</b> (ЕЭК № 74, п. 5), единая база для пошлины и регистрационного сбора. Курс валют — на момент расчёта; ставки сверять на дату декларации.</span></div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="ctitle"><span class="n">1</span>Автомобиль и таможенная база</div>
+      <div class="row"><label>Источник таможенной базы</label><div class="seg" id="kz-srcSel"><button data-src="grid" class="on">Сетка КГД</button><button data-src="manual">Вручную</button><button data-src="invoice">Инвойс + фрахт</button></div></div>
+      <div id="kz-gridBox">
+        <div class="three">
+          <div class="row"><label>Марка</label><select id="kz-brand"></select></div>
+          <div class="row"><label>Модель</label><select id="kz-model"></select></div>
+          <div class="row"><label>Объём</label><select id="kz-volSel"></select></div>
+        </div>
+        <div class="src" id="kz-gridNote">—</div>
+      </div>
+      <div id="kz-manualBox" style="display:none">
+        <div class="row"><label>Таможенная база, $</label><input type="number" id="kz-manualUsd" value="20000"></div>
+      </div>
+      <div class="three">
+        <div class="row"><label>Объём, см³</label><input type="number" id="kz-cc" value="1999"></div>
+        <div class="row"><label>Год выпуска</label><input type="number" id="kz-mYear" value="2021"></div>
+        <div class="row"><label>Месяц выпуска</label><select id="kz-mMonth"><option value="1">01</option><option value="2">02</option><option value="3">03</option><option value="4">04</option><option value="5">05</option><option value="6">06</option><option value="7">07</option><option value="8">08</option><option value="9">09</option><option value="10">10</option><option value="11" selected>11</option><option value="12">12</option></select></div>
+      </div>
+      <div class="row"><label>Тип двигателя</label><div class="seg" id="kz-fuelSel"><button data-fuel="ice" class="on">ДВС</button><button data-fuel="hybrid">Гибрид</button><button data-fuel="ev">Электро</button></div></div>
+      <div class="row"><label>Месяц подтверждён документом?</label><div class="seg" id="kz-mcSel"><button data-mc="yes" class="on">Да</button><button data-mc="no">Нет → 1 июля</button></div></div>
+      <div class="row"><label>Валюта закупа</label><div class="seg" id="kz-curSel"><button data-cur="usd" class="on">$ (инвойс)</button><button data-cur="krw">₩ (лот encar)</button></div></div>
+      <div class="two">
+        <div class="row cur-usd"><label>Цена закупа, $ <span class="hint">факт</span></label><input type="number" id="kz-buy" value="18000"></div>
+        <div class="row cur-krw hidden"><label>Цена лота, ₩ <span class="hint">encar</span></label><input type="number" id="kz-buyKrw" value="25000000"></div>
+        <div class="row"><label>Дата декларации <span class="rbadge" id="kz-rateStatus">загрузка…</span></label><input type="date" id="kz-rdate"></div>
+      </div>
+      <div class="three">
+        <div class="row"><label>USD→₸ <span class="hint">🔒курс</span></label><input type="number" id="kz-fx" value="458.45" step="0.0001" readonly></div>
+        <div class="row"><label>EUR→₸ <span class="hint">🔒курс</span></label><input type="number" id="kz-fxe" value="531.39" step="0.0001" readonly></div>
+        <div class="row"><label>₩/100 <span class="hint">🔒курс</span></label><input type="number" id="kz-fxk" value="33.37" step="0.0001" readonly></div>
+      </div>
+      <div class="row" hidden aria-hidden="true"><input type="number" id="kz-fxAdd" value="4" step="0.5"></div>
+      <div class="src">Курс валют — <a href="https://nationalbank.kz/ru/exchangerates/ezhednevnye-oficialnye-rynochnye-kursy-valyut" target="_blank" rel="noopener">nationalbank.kz</a>, на момент расчёта. <b>Ручной ввод по Казахстану запрещён</b> — курс принимается только от Нацбанка РК. Вона котируется <b>за 100</b> единиц (в РФ и РБ — за 1000); ошибка в номинале даёт расхождение в 10 раз. Кросс-курсы не считать.</div>
+
+      <div class="ctitle" style="margin-top:6px"><span class="n">2</span>Статус и маршрут</div>
+      <div class="two">
+        <div class="row"><label>Статус получателя</label><div class="seg" id="kz-stSel"><button data-st="personal" class="on">Физлицо / личное</button><button data-st="legal">Юрлицо / перепродажа</button></div></div>
+        <div class="row"><label>Маршрут ввоза</label><div class="seg" id="kz-rtSel"><button data-rt="direct" class="on">Прямой из Кореи</button><button data-rt="eaeu">Через РФ / РБ</button></div></div>
+      </div>
+      <div class="row pers-only"><label>Ввозили авто на это физлицо за 12 мес?</label><div class="seg" id="kz-imSel"><button data-im="no" class="on">Нет</button><button data-im="yes">Да</button></div></div>
+
+      <div class="ctitle" style="margin-top:6px"><span class="n">3</span>Логистика и оформление</div>
+      <div class="row"><label>Класс авто (логистика)</label><select id="kz-logClass">
+        <option value="2500">Седан до бизнес-класса — $2 500</option>
+        <option value="3500" selected>Премиум / паркетник (Santa Fe, Sorento, X3) — $3 500</option>
+        <option value="4500">Минивэн / большой джип (Carnival, Palisade) — $4 500</option></select></div>
+      <div class="two">
+        <div class="row"><label>Фрахт до КЗ, $</label><input type="number" id="kz-fracht" value="3500"></div>
+        <div class="row"><label>Брокер, ₸ <span class="hint">оценка</span></label><input type="number" id="kz-broker" value="250000"></div>
+      </div>
+      <div class="two">
+        <div class="row"><label>СБКТС, ₸</label><input type="number" id="kz-sbkts" value="0"></div>
+        <div class="row"><label>СРТС + номера, ₸ <span class="hint">оценка</span></label><input type="number" id="kz-srts" value="17500"></div>
+      </div>
+      <div class="row"><label>Розница в КЗ, ₸ <span class="hint">Kolesa</span></label><input type="number" id="kz-retail" value="0"></div>
+      <div class="linkbtns">
+        <a class="lb" id="kz-lbKolesa" target="_blank" rel="noopener">Kolesa.kz</a>
+        <a class="lb" id="kz-lbMycars" target="_blank" rel="noopener">Mycars.kz</a>
+        <a class="lb" id="kz-lbAster" target="_blank" rel="noopener">Aster.kz</a>
+      </div>
+      <div class="src">Площадки — для оценки розницы. Источником ставок не являются.</div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle"><span class="n">₸</span>Результат</div>
+      <div id="kz-verdict" class="verdict x"><div class="vt">—</div><div class="vm">введите данные</div></div>
+      <div id="kz-breakdown"></div>
+      <div id="kz-flags"></div>
+      <div class="foot" id="kz-foot"></div>
+    </div>
+  </div>
+</div>
+
+</section>
+<section id="sec-by" hidden>
+<div class="wrap">
+  <div class="eyebrow">ENCAR EXPORT · Беларусь · методика 02.09.2026 · ред. патча 1.1</div>
+  <h1>Калькулятор ввоза: Беларусь</h1>
+
+  <div class="warn"><span>✅</span><span>База утильсбора РБ подтверждена 02.09.2026 по тексту ПП Совмина РБ от 23.04.2026 № 195 (pravo.by): для легковых M1 — тип двигателя, <b>объём</b>, статус получателя и возраст. Мощность в кВт (прил. 3) относится к самоходным машинам и к легковым не применяется.</span></div>
+
+  <div class="warn"><span>⚠️</span><span>Возраст — от <b>даты изготовления</b> (ЕЭК № 74, п. 5). Акциза на легковые в РБ нет. Вона котируется раз в месяц; курс валют — на момент расчёта.</span></div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="ctitle"><span class="n">1</span>Автомобиль и стоимость</div>
+      <div class="row"><label>Валюта закупа</label><div class="seg" id="by-curSel"><button data-cur="usd" class="on">$ (инвойс)</button><button data-cur="krw">₩ (лот encar)</button></div></div>
+      <div class="two">
+        <div class="row cur-usd"><label>Цена в Корее, $</label><input type="number" id="by-buy" value="18000"></div>
+        <div class="row cur-krw hidden"><label>Цена лота, ₩ <span class="hint">encar</span></label><input type="number" id="by-buyKrw" value="25000000"></div>
+        <div class="row"><label>Фрахт Корея→Минск, $</label><input type="number" id="by-log" value="2500"></div>
+      </div>
+      <div class="row"><label>Дата декларации <span class="rbadge" id="by-rateStatus">загрузка…</span></label><input type="date" id="by-rdate"></div>
+      <div class="three">
+        <div class="row"><label>USD→BYN <span class="hint">🔒курс</span></label><input type="number" id="by-usdby" value="3.0629" step="0.0001" readonly></div>
+        <div class="row"><label>EUR→BYN <span class="hint">🔒курс</span></label><input type="number" id="by-eurby" value="3.5512" step="0.0001" readonly></div>
+        <div class="row"><label>₩/1000 <span class="hint">🔒курс · вона раз в месяц</span></label><input type="number" id="by-krwby" value="2.2349" step="0.0001" readonly></div>
+      </div>
+      <div class="row" hidden aria-hidden="true"><input type="number" id="by-fxAdd" value="4" step="0.5"></div>
+      <div class="src">Курс валют — <a href="https://www.nbrb.by/statistics/rates/ratesdaily.asp" target="_blank" rel="noopener">nbrb.by</a>, на момент расчёта. Вона котируется <b>раз в месяц</b> и за 1000 единиц. Кросс-курсы не используются.</div>
+      <div class="three">
+        <div class="row"><label>Объём, см³</label><input type="number" id="by-cc" value="1999"></div>
+        <div class="row"><label>Год выпуска</label><input type="number" id="by-mYear" value="2021"></div>
+        <div class="row"><label>Месяц выпуска</label><select id="by-mMonth"><option value="1">01</option><option value="2">02</option><option value="3">03</option><option value="4">04</option><option value="5">05</option><option value="6">06</option><option value="7">07</option><option value="8">08</option><option value="9">09</option><option value="10">10</option><option value="11" selected>11</option><option value="12">12</option></select></div>
+      </div>
+      <div class="row"><label>Месяц подтверждён документом?</label><div class="seg" id="by-mcSel"><button data-mc="yes" class="on">Да</button><button data-mc="no">Нет → 1 июля</button></div></div>
+
+      <div class="ctitle" style="margin-top:6px"><span class="n">2</span>Режим</div>
+      <div class="two">
+        <div class="row"><label>Статус получателя</label><div class="seg" id="by-stSel"><button data-st="personal" class="on">Физлицо / личное</button><button data-st="legal">Юрлицо</button></div></div>
+        <div class="row"><label>Тип двигателя</label><div class="seg" id="by-fuelSel"><button data-fuel="ice" class="on">ДВС</button><button data-fuel="hybrid">Гибрид</button><button data-fuel="ev">Электро</button></div></div>
+      </div>
+      <div class="row pers-only"><label>Льгота № 140 <span class="hint">−50% пошлины · ТРЕБУЕТ ПРОВЕРКИ</span></label><div class="seg" id="by-lgSel"><button data-lg="no" class="on">Нет</button><button data-lg="yes">Да</button></div></div>
+
+      <div class="ctitle" style="margin-top:6px"><span class="n">3</span>Местные платежи, BYN</div>
+      <div class="three">
+        <div class="row"><label>Утильсбор <span class="hint">авто</span></label><input type="number" id="by-util" value="" data-default="утильсбор подставляется из справочника ставок" readonly></div>
+        <div class="row"><label>Тамож. сбор</label><input type="number" id="by-sbor" value="120" readonly></div>
+        <div class="row"><label>Регистрация</label><input type="number" id="by-reg" value="" data-default="регистрация подставляется из справочника ставок" readonly></div>
+      </div>
+      <div class="three">
+        <div class="row"><label>СБКТС <span class="hint">оценка</span></label><input type="number" id="by-sbkts" value="630"></div>
+        <div class="row"><label>ЭРА-РБ <span class="hint">оценка</span></label><input type="number" id="by-era" value="2250"></div>
+        <div class="row"><label>Брокер</label><input type="number" id="by-brk" value="0"></div>
+      </div>
+      <div class="two">
+        <div class="row"><label>Логистика внутри страны</label><input type="number" id="by-rflog" value="0"></div>
+        <div class="row"><label>Розница, BYN <span class="hint">av.by</span></label><input type="number" id="by-retail" value="0"></div>
+      </div>
+      <div class="linkbtns" style="grid-template-columns:1fr 1fr">
+        <a class="lb" id="by-lbAv" href="https://cars.av.by/filter" target="_blank" rel="noopener">av.by</a>
+        <a class="lb" id="by-lbAbw" href="https://abw.by/cars" target="_blank" rel="noopener">ABW.by</a>
+      </div>
+      <div class="src">Площадки — для оценки розницы. Источником ставок не являются.</div>
+    </div>
+
+    <div class="card">
+      <div class="ctitle"><span class="n">Br</span>Результат</div>
+      <div id="by-verdict" class="verdict x"><div class="vt">—</div><div class="vm">введите данные</div></div>
+      <div id="by-breakdown"></div>
+      <div id="by-flags"></div>
+      <div class="foot" id="by-foot"></div>
+    </div>
+  </div>
+</div>
+
+</section>
+<script id="encar-rates-default">
+/* ══════════════════════════════════════════════════════════════════
+   ENCAR EXPORT — СПРАВОЧНИК СТАВОК. ЕДИНСТВЕННОЕ МЕСТО ПРАВКИ.
+   Ред. 03.09.2026. Владелец файла: роль № 02 (Таможенный аналитик).
+   Головной документ компании: «Калькулятор — единая методика РФ КЗ РБ».
+   Правило: сначала правка в методике, потом сюда, потом в материалы клиенту.
+   У каждой величины: value/массив, _source (первоисточник), checked_at,
+   requires_verification. Ставка без _source к работе не допускается.
+   Ниже — значения по умолчанию. При размещении на своём хостинге рядом
+   кладётся файл rates.js с тем же объектом — он перекрывает эти значения
+   и правится без пересборки страницы.
+   ══════════════════════════════════════════════════════════════════ */
+window.ENCAR_RATES = {
+  _meta:{ rev:"03.09.2026", owner:"роль № 02", checked_at:"2026-09-03" },
+
+  /* ── ЕАЭС: единые ставки для физлиц и ЕТТ. Общие для всех трёх стран ── */
+  eaeu:{
+    _source:"Решение Совета ЕЭК от 20.12.2017 № 107, Прил. № 2",
+    checked_at:"2026-09-02", requires_verification:false,
+    duty35 :[[1000,1.5],[1500,1.7],[1800,2.5],[2300,2.7],[3000,3.0],[Infinity,3.6]],
+    duty5  :[[1000,3.0],[1500,3.2],[1800,3.5],[2300,4.8],[3000,5.0],[Infinity,5.7]],
+    dutyLt3:[[8500,0.54,2.5],[16700,0.48,3.5],[42300,0.48,5.5],[84500,0.48,7.5],[169000,0.48,15],[Infinity,0.48,20]],
+    ett:{ _source:"Решение Совета ЕЭК от 14.09.2021 № 80; код 8703 23 908 3 — 20%, но не менее 0,44 €/см³",
+          checked_at:"2026-09-02", requires_verification:false,
+          adValorem:0.20, fallbackMin:0.44, fallbackMinOld7:2.2, ccMin:1500, ccMid:1800, ccMax:3000,
+          cc1500_1800:{ neu:0.36, old7:1.6 },
+          cc1800_3000:{ neu:0.44, old7:2.2 } }
+  },
+
+  /* ── РОССИЯ ── */
+  rf:{
+    vat:{ value:0.22, _source:"ФЗ от 28.11.2025 № 425-ФЗ, ст. 164 НК РФ", checked_at:"2026-09-02", requires_verification:false },
+    utilBase:{ value:20000, unit:"RUB", _source:"ПП РФ от 26.12.2013 № 1291, ред. 06.02.2026", checked_at:"2026-09-02", requires_verification:false },
+    kwCap:{ value:117.68, unit:"kW", _source:"сноска <6> раздела I Перечня к ПП РФ № 1291 (=160 л.с.)", checked_at:"2026-09-02", requires_verification:false },
+    utilPref:{ _source:"льготная шкала раздела I Перечня к ПП РФ № 1291, сноска <7> (после ПП № 1713 сноска перенумерована с <6>)",
+              checked_at:"2026-09-02", requires_verification:false,
+              _note:"коэффициенты не индексировались; 0,26 × 20 000 = 5 200 ₽ — базовая величина модели А",
+              neu:0.17, old:0.26,
+              ccMax:2000,   /* правило владельца 03.09.2026: льгота ДВС только до 2 000 см³ ВКЛЮЧИТЕЛЬНО */
+              kwCap:117.68, /* 160 л.с. ВКЛЮЧИТЕЛЬНО; превышение любого из двух параметров снимает льготу целиком */
+              _rule:"Льгота действует, только когда ОБА параметра в пределах: объём ≤ 2 000 см³ И мощность ≤ 117,68 кВт (160 л.с.). Превышение любого одного — коммерческий утильсбор.",
+              _conflict:"Отраслевые источники (звено 3) указывают предел объёма 3 000 см³. Владелец задал 2 000 см³ как рабочее правило — это более консервативная сторона: при ошибке расчёт завышен, а не занижен. Разрешается текстом сноски <7> Перечня либо квитанцией сделки.",
+              kwCapEv:58.84 /* порог мощности для электро и гибридов = 80 л.с. */ },
+    utilEv:{ _source:"раздел I Перечня к ПП РФ № 1291, строка «ТС с электродвигателями и гибриды последовательного типа»; шкала только по мощности, объём не учитывается; столбец 2026 года",
+             checked_at:"2026-09-03", requires_verification:true,
+             _note:"подтверждено звеном 3 (alta.ru текст ПП № 1713 — колонка 2025, и отраслевые публикации 2026 — колонка 2026, сверка через индексацию x1,2 на 34 ячейках)",
+             pow:[58.84,73.55,95.61,117.68,139.75,161.81,183.88,205.94,Infinity],
+             k:[[40.04,70.44],[49.56,82.08],[65.88,95.64],[78,111.36],[92.4,129.72],[109.68,151.2],[129.96,176.16],[153.96,205.2],[182.4,239.04]] },
+    excise:{ value:613, unit:"RUB/л.с.", _source:"ст. 193 НК РФ, период 2026, диапазон 112,5–150 кВт",
+             checked_at:"2026-09-02", requires_verification:true,
+             _note:"вне диапазона 112,5–150 кВт ставка не заведена — вводится вручную" },
+    feePersonal:{ value:689, unit:"RUB", _source:"ПП РФ от 28.11.2024 № 1637 / ПП РФ от 23.10.2025 № 1638", checked_at:"2026-09-02", requires_verification:false },
+    util:{ _source:"ПП РФ от 01.11.2025 № 1713 (с 01.12.2025), Перечень к ПП РФ № 1291; столбец с 01.01.2026",
+           checked_at:"2026-09-02", requires_verification:true,
+           _note:"О-25: привязка пары коэффициентов к колонке года построчно не подтверждена",
+           pow:[51.48,73.55,95.61,117.68,139.75,161.81,183.88,205.94,228,250.07,272.13,294.20,316.26,338.33,367.75,Infinity],
+           v1000:[[14.88,27.6],[14.88,27.6],[14.88,27.6],[14.88,27.6],[15.36,28.43],[15.84,29.28],[16.2,30.12],[17.28,30.12],[17.28,30.12],[17.28,30.12],[17.28,30.12],[17.28,30.12],[17.28,30.12],[17.28,30.12],[17.28,30.12],[17.28,30.12]],
+           v2000:[[40.04,70.44],[40.04,70.44],[40.04,70.44],[40.04,70.44],[45,74.64],[47.64,79.2],[50.52,83.88],[57.12,91.92],[64.56,100.56],[72.96,110.16],[83.16,120.6],[94.8,132],[108,144.6],[123.24,158.4],[140.4,173.4],[160.08,189.84]],
+           v3000:[[112.52,170.36],[112.52,170.36],[112.52,170.36],[112.52,170.36],[115.34,172.8],[118.2,175.08],[120.12,177.6],[126,183],[131.04,188.52],[136.32,193.68],[141.72,199.08],[147.48,204.72],[153.36,210.48],[159.48,216.36],[165.84,222.36],[172.44,228.6]],
+           v3500:[[129.2,197.81],[129.2,197.81],[129.2,197.81],[129.2,197.81],[131.76,200.04],[134.4,202.2],[137.16,204.36],[140.52,207.24],[144,212.4],[151.92,217.8],[160.32,224.28],[169.2,231],[178.44,237.96],[188.28,245.04],[198.6,252.48],[209.52,260.04]],
+           v3500p:[[164.53,216.29],[164.53,216.29],[164.53,216.29],[164.53,216.29],[167.28,219.48],[170.16,222.84],[173.04,226.2],[176.52,231.36],[180,236.64],[186.36,249.6],[192.88,263.4],[199.68,277.92],[206.64,293.16],[213.84,309.36],[221.28,326.4],[229.08,344.28]] },
+    feeScale:{ _source:"ПП РФ № 1637 / № 1638, шкала таможенного сбора", checked_at:"2026-09-02", requires_verification:false,
+               table:[[200000,1231],[450000,2462],[1200000,4924],[2700000,13541],[4200000,18465],[5500000,21344],[10000000,49240],[Infinity,73860]] },
+    fx:{ _source:"cbr.ru — курс ЦБ РФ, вона за 1000", checked_at:"2026-09-03", requires_verification:false,
+         krw:63.4870, usd:86.9963, eur:100.8287, date:"03.09.2026" }
+  },
+
+  /* ── КАЗАХСТАН ── */
+  kz:{
+    vat:{ value:0.16, _source:"НК РК от 18.07.2025 № 214-VIII, глава 47 / ст. 503", checked_at:"2026-09-02", requires_verification:false },
+    mrp:{ value:4325, unit:"KZT", _source:"Закон РК о республиканском бюджете на 2026–2028 № 239", checked_at:"2026-09-02", requires_verification:false },
+    utilBaseMrp:{ value:50, _source:"приказ и.о. Министра экологии РК от 02.11.2021 № 448, прил. 4 в ред. приказа от 20.03.2026 № 54", checked_at:"2026-09-02", requires_verification:false },
+    utilK:{ _source:"там же, прил. 4; коэффициент зависит от объёма И МАРШРУТА (из РФ/РБ — кратно выше)",
+            checked_at:"2026-09-02", requires_verification:false,
+            table:{direct:{1000:1.5,2000:3.5,3000:5.0,9999:11.5},eaeu:{1000:22,2000:136,3000:164,9999:246}} },
+    sborMrp:{ value:6, _source:"ПП РК от 05.04.2018 № 171 в ред. ПП РК от 02.08.2023 № 631", checked_at:"2026-09-02", requires_verification:false },
+    luxMrp:{ value:18000, _source:"НК РК № 214-VIII, п. 6 ст. 537 — акциз на роскошь 10% от стоимости", checked_at:"2026-09-02", requires_verification:false },
+    luxRate:{ value:0.10, _source:"НК РК № 214-VIII, п. 6 ст. 537 — 10% от стоимости",
+              checked_at:"2026-09-02", requires_verification:false,
+              appliesToIndividual:true, _note:"решение владельца 03.09.2026 (О-38): акциз применяется и при ввозе физлицом" },
+    exciseVolume:{ rate:100, unit:"KZT/см³", ccOver:3000, _source:"НК РК, ст. 536–537 — только при объёме свыше 3 000 см³",
+              checked_at:"2026-09-02", requires_verification:true,
+              appliesToIndividual:false, _note:"применимость к физлицу владельцем не решена — считается только юрлицу" },
+    /* СПОРНАЯ СТРОКА — О-37. Две версии первой ступени, спор не разрешён.
+       Ступени задаются как [возраст_меньше_чем, ставка_в_МРП].
+       Версия st615 (действует сейчас): до 2 лет 0,25 · 2–3 года 50 · старше 3 лет 500.
+       Версия kgd (три разъяснения КГД): до 1 года 0,25 · 1–3 года 50 · старше 3 лет 500.
+       Разница только на авто 1–2 лет: 1 081 ₸ против 216 250 ₸ = 215 169 ₸.
+       На рабочее окно компании 3–5 лет спор НЕ влияет — 500 МРП в обеих. */
+    regFeeEv:{ _source:"ст. 615 п. 4 НК РК № 214-VIII, строка «M1 с электродвигателями (кроме гибридных)»",
+               checked_at:"2026-09-03", requires_verification:true,
+               table:[[2,0.25],[3,25],[Infinity,250]] },
+    utilKEv:{ _source:"приказ Министра экологии РК № 448, прил. 4, строка «с электродвигателями, кроме гибридных»: прямой ввоз 0, ввоз из РФ/РБ 60",
+              checked_at:"2026-09-03", requires_verification:true,
+              _note:"ГИБРИДЫ под нулевой коэффициент НЕ подпадают и считаются по объёму двигателя",
+              direct:0, eaeu:60 },
+    /* ШКАЛА ЗАДАНА ВЛАДЕЛЬЦЕМ 03.09.2026. Версия «kgd» — рабочая.
+       до 1 года — 0,25 МРП = 1 081 ₸
+       от 1 до 3 лет — 50 МРП = 216 250 ₸
+       старше 3 лет — 500 МРП = 2 162 500 ₸
+       Возраст считается ОТ ДАТЫ ПРОИЗВОДСТВА (правило владельца), а не по календарному году выпуска.
+       Владелец знает и принял, что основание версии «kgd» — ст. 456 ПРЕЖНЕГО НК РК
+       (три разъяснения КГД + ИС «Параграф», публикации 2016 года).
+       Альтернатива «st615» (ст. 615 п. 4 НК РК № 214-VIII, действует с 01.01.2026) даёт
+       первую ступень «до 2 лет» и расходится на автомобилях возрастом 1–2 года:
+       1 081 ₸ против 216 250 ₸, разница 215 169 ₸. Версия «kgd» — более консервативная
+       сторона: при ошибке платёж завышен, а не занижен.
+       Разрешается квитанцией первой сделки по КЗ. */
+    regFee:{ _source:"версия kgd — три разъяснения ДГД (Костанайская, Жамбылская обл., г. Астана) + ИС «Параграф» doc_id 32208562, основание ст. 456 прежнего НК РК; версия st615 — ст. 615 п. 4 НК РК № 214-VIII",
+             checked_at:"2026-09-03", requires_verification:true, disputed:"О-37",
+             version:"kgd",
+             kgd  :[[1,0.25],[3,50],[Infinity,500]],
+             st615:[[2,0.25],[3,50],[Infinity,500]] },
+    fx:{ _source:"nationalbank.kz — курс НБ РК, вона за 100", checked_at:"2026-09-03", requires_verification:false,
+         usd:455.40, eur:526.99, krw100:33.39, date:"03.09.2026" }
+  },
+
+  /* ── БЕЛАРУСЬ ── */
+  by:{
+    vat:{ value:0.20, _source:"ст. 122 НК РБ; разъяснение МНС РБ от 25.06.2026 № 2-1-13/03226", checked_at:"2026-09-02", requires_verification:false },
+    sbor:{ value:120, unit:"BYN", _source:"Указ Президента РБ от 13.07.2006 № 443, ред. 03.12.2024", checked_at:"2026-09-02", requires_verification:false },
+    regFee:{ value:140.40, unit:"BYN", _source:"3,12 БВ × 45 BYN; состав первоисточником НЕ подтверждён, дополнения по РБ предлагают 3 БВ = 135,00",
+             checked_at:"2026-09-02", requires_verification:true },
+    utilPers:{ _source:"ПП Совмина РБ от 23.04.2026 № 195, прил. 2 — прямые суммы BYN",
+               checked_at:"2026-09-02", requires_verification:true,
+               _note:"первоисточник закрыт robots.txt на всех трёх официальных публикациях; не учтено изменяющее ПП № 380 от 28.07.2026",
+               table:{lt3:624.92,ge3:1282.02} },
+    utilOrg:{ _source:"там же, прил. 2, организации", checked_at:"2026-09-02", requires_verification:true,
+              table:[[0,1229.28,2950.38],[1000,6811.16,17386.97],[2000,25226.22,44374.56],[3000,70885.91,107322.94],[3500,81393.68,124611.62],[Infinity,103649.00,136253.33]] },
+    fx:{ _source:"api.nbrb.by — курс НБ РБ; вона котируется РАЗ В МЕСЯЦ", checked_at:"2026-09-02", requires_verification:false,
+         usd:3.0629, eur:3.5512, krw:2.2349, date:"02.09.2026" }
+  }
+};
+/* Список величин, требующих подтверждения — для служебной плашки и QA */
+window.ENCAR_UNVERIFIED = function(){
+  const out=[]; (function walk(o,path){
+    if(o&&typeof o==="object"&&!Array.isArray(o)){
+      if(o.requires_verification===true) out.push({path:path, source:o._source||"", note:o._note||"", disputed:o.disputed||""});
+      for(const k in o) if(k[0]!=="_") walk(o[k], path?path+"."+k:k);
+    }})(window.ENCAR_RATES,""); return out;
+};
+</script>
+<script>
+(function(){
+const R=window.ENCAR_RATES;const PFX="rf-";const ROOT=document.getElementById("sec-rf");const $=id=>document.getElementById(PFX+id);
+const state={mode:"deal",st:"personal",pu:"own",mc:"yes",im:"no",fuel:"ice"};
+const DUTY_35=R.eaeu.duty35;
+const DUTY_5 =R.eaeu.duty5;
+const DUTY_LT3=R.eaeu.dutyLt3;
+function ettMin(cc,old7){ const E=R.eaeu.ett; if(cc>=R.eaeu.ett.ccMin&&cc<R.eaeu.ett.ccMid) return old7?E.cc1500_1800.old7:E.cc1500_1800.neu;
+  if(cc>=R.eaeu.ett.ccMid&&cc<=R.eaeu.ett.ccMax) return old7?E.cc1800_3000.old7:E.cc1800_3000.neu; return null; }
+const BASE=R.rf.utilBase.value, KW_CAP=R.rf.kwCap.value;
+const POW=R.rf.util.pow;
+const V1000=R.rf.util.v1000;
+const V2000=R.rf.util.v2000;
+const V3000=R.rf.util.v3000;
+const V3500=R.rf.util.v3500;
+const V3500P=R.rf.util.v3500p;
+function powIdx(kw){for(let i=0;i<POW.length;i++)if(kw<=POW[i])return i;return 15;}
+const POW_EV=R.rf.utilEv.pow, K_EV=R.rf.utilEv.k;
+function powIdxEv(kw){for(let i=0;i<POW_EV.length;i++)if(kw<=POW_EV[i])return i;return POW_EV.length-1;}
+function grpFor(cc){return cc<=1000?V1000:cc<=2000?V2000:cc<=3000?V3000:cc<=3500?V3500:V3500P;}
+const FEE_PERSONAL=R.rf.feePersonal.value;
+const FEE=R.rf.feeScale.table;
+function feeScale(ts){for(const p of FEE)if(ts<=p[0])return p[1];return FEE[FEE.length-1][1];}
+function dutyRate(cc,band){const t=band==="mid"?DUTY_35:band==="old"?DUTY_5:null;if(!t)return null;for(const p of t)if(cc<=p[0])return p[1];}
+const MODELS={hyundai_tucson:{label:"Hyundai Tucson",b:"hyundai",m:"tucson",q:"Hyundai Tucson"},kia_sportage:{label:"Kia Sportage",b:"kia",m:"sportage",q:"Kia Sportage"},kia_k5:{label:"Kia K5",b:"kia",m:"k5",q:"Kia K5"},hyundai_sonata:{label:"Hyundai Sonata",b:"hyundai",m:"sonata",q:"Hyundai Sonata"},hyundai_santa_fe:{label:"Hyundai Santa Fe",b:"hyundai",m:"santa_fe",q:"Hyundai Santa Fe"},kia_sorento:{label:"Kia Sorento",b:"kia",m:"sorento",q:"Kia Sorento"},genesis_g80:{label:"Genesis G80",b:"genesis",m:"g80",q:"Genesis G80"}};
+/* ── КУРС: ТОЛЬКО ЦБ РФ (правило владельца: каждая страна — свой ЦБ) ── */
+const FB=R.rf.fx;
+let RATE_SRC="";
+function nowStamp(){var d=new Date(),p=function(n){return ("0"+n).slice(-2);};
+  return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear()+", "+p(d.getHours())+":"+p(d.getMinutes());}
+function todayDMY(){var d=new Date(),p=function(n){return ("0"+n).slice(-2);};
+  return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear();}
+
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function ddmmyyyy(iso){var p=iso.split("-");return p[2]+"/"+p[1]+"/"+p[0];}
+function setEditable(on){["krwr","usd","eur"].forEach(function(id){$(id).readOnly=!on;});}
+function decodeBytes(buf){
+  var u=new Uint8Array(buf),s="";
+  try{return new TextDecoder("windows-1251").decode(u);}catch(e){}
+  for(var i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);
+  return s;
+}
+function parseCbrXml(txt){
+  var doc=new DOMParser().parseFromString(txt,"text/xml");
+  var vs=doc.getElementsByTagName("Valute"),out={};
+  for(var i=0;i<vs.length;i++){
+    var c=vs[i].getElementsByTagName("CharCode")[0].textContent.trim();
+    var n=parseFloat(vs[i].getElementsByTagName("Nominal")[0].textContent.replace(",","."));
+    var v=parseFloat(vs[i].getElementsByTagName("Value")[0].textContent.replace(",","."));
+    out[c]={v:v,n:n||1};
+  }
+  if(!out.USD||!out.EUR||!out.KRW)throw new Error("нет валюты");
+  return out;
+}
+function applyCbr(o){
+  $("usd").value=(o.USD.v/o.USD.n).toFixed(4);
+  $("eur").value=(o.EUR.v/o.EUR.n).toFixed(4);
+  $("krwr").value=(o.KRW.v/o.KRW.n*1000).toFixed(4);
+}
+function loadRates(d){
+  var b=$("rateStatus");b.textContent="загрузка…";b.className="rbadge";
+  var FX=window.ENCAR_FX&&window.ENCAR_FX.rf;
+  if(FX){$("krwr").value=FX.krw;$("usd").value=FX.usd;$("eur").value=FX.eur;
+    var fxD=window.ENCAR_FX.date||"";
+    if(fxD===todayDMY()){RATE_SRC="fx";setEditable(false);
+      b.textContent="Курс · "+fxD;b.className="rbadge ok";}
+    else{RATE_SRC="fx-stale";setEditable(true);
+      b.textContent="⚠ курс от "+fxD+", не на сегодня";b.className="rbadge warn";}
+    calc();}
+  var iso=todayISO(); /* курс — строго на момент запроса расчёта (правило владельца 03.09.2026) */
+  var official="https://www.cbr.ru/scripts/XML_daily.asp?date_req="+ddmmyyyy(iso);
+  var p=iso.split("-");
+  var mirror=(iso===todayISO())?"https://www.cbr-xml-daily.ru/daily_json.js"
+            :"https://www.cbr-xml-daily.ru/archive/"+p[0]+"/"+p[1]+"/"+p[2]+"/daily_json.js";
+  return fetch(official).then(function(r){if(!r.ok)throw 0;return r.arrayBuffer();})
+    .then(function(buf){return decodeBytes(buf);})
+    .then(function(t){applyCbr(parseCbrXml(t));RATE_SRC="cbr";setEditable(false);
+      b.textContent="Курс · "+nowStamp();b.className="rbadge ok";calc();})
+    .catch(function(){
+      return fetch(mirror).then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(j){
+        $("usd").value=(j.Valute.USD.Value/j.Valute.USD.Nominal).toFixed(4);
+        $("eur").value=(j.Valute.EUR.Value/j.Valute.EUR.Nominal).toFixed(4);
+        $("krwr").value=(j.Valute.KRW.Value/j.Valute.KRW.Nominal*1000).toFixed(4);
+        RATE_SRC="mirror";setEditable(false);
+        b.textContent="Курс · "+nowStamp();b.className="rbadge ok";calc();});
+    })
+    .catch(function(){
+      if(RATE_SRC==="fx"||RATE_SRC==="fx-stale")return;
+      $("krwr").value=FB.krw;$("usd").value=FB.usd;$("eur").value=FB.eur;
+      RATE_SRC="fallback";setEditable(true);
+      b.textContent="✏️ впишите курс вручную";b.className="rbadge warn";calc();});
+}
+
+function madeMoment(){var y=+$("mYear").value||0;
+  if(state.mc==="yes"){var m=+$("mMonth").value||7;return new Date(y,m-1,15);}
+  return new Date(y,6,1);}
+function declDate(){var v=$("rdate").value;return v?new Date(v+"T00:00:00"):new Date();}
+function ageYears(){return (declDate()-madeMoment())/(365.2425*24*3600*1000);}
+function bandOf(a){return a<3?"new":a<=5?"mid":"old";}
+function bandName(b){return b==="new"?"до 3 лет":b==="mid"?"3–5 лет":"старше 5 лет";}
+function buildLinks(){var md=MODELS[$("model").value];if(!md)return;var y=+$("myear").value||2022,km=+$("mileage").value||100000;
+  $("lbDrom").href="https://auto.drom.ru/"+md.b+"/"+md.m+"/year-"+y+"/?maxprobeg="+km;
+  $("lbAuto").href="https://auto.ru/rossiya/cars/"+md.b+"/"+md.m+"/used/?year_from="+y+"&year_to="+y+"&km_age_to="+km;
+  $("lbAvito").href="https://www.avito.ru/rossiya/avtomobili?q="+encodeURIComponent(md.q+" "+y);}
+function setMode(m){state.mode=m;Array.prototype.forEach.call($("modeSel").children,function(b){b.classList.toggle("on",b.dataset.mode===m);});
+  ROOT.querySelectorAll(".deal-only").forEach(function(e){e.classList.toggle("hidden",m!=="deal");});
+  ROOT.querySelectorAll(".lot-only").forEach(function(e){e.classList.toggle("hidden",m!=="lot");});calc();}
+$("modeSel").addEventListener("click",function(e){var b=e.target.closest("button");if(b)setMode(b.dataset.mode);});
+segWire("fuelSel","fuel");
+function segWire(sel,key,fn){$(sel).addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
+  Array.prototype.forEach.call(e.currentTarget.children,function(x){x.classList.remove("on");});b.classList.add("on");
+  state[key]=b.dataset[Object.keys(b.dataset)[0]];if(fn)fn();calc();});}
+function personalRoute(){return state.st==="personal"&&state.pu==="own";}
+function syncRoute(){ROOT.querySelectorAll(".legal-only").forEach(function(e){e.classList.toggle("hidden",personalRoute());});}
+segWire("stSel","st",syncRoute);segWire("puSel","pu",syncRoute);segWire("mcSel","mc");segWire("imSel","im");
+["buyUsd","buyKrw","log","mYear","cc","kw","hp","exRate","brk","misc","rflog","market","markupRub","fxAdd","krwr","usd","eur"].forEach(function(id){$(id).addEventListener("input",calc);});
+$("mMonth").addEventListener("change",calc);
+["model","myear","mileage"].forEach(function(id){$(id).addEventListener("input",function(){buildLinks();calc();});});
+/* курс не зависит от даты декларации: берётся на момент запроса расчёта */
+var rub=function(n){return Math.round(n).toLocaleString("ru-RU")+" ₽";};
+function dutyPersonal(cc,band,cvRub,eur){
+  if(band==="new"){var cvEur=eur>0?cvRub/eur:0;var br=DUTY_LT3.find(function(b){return cvEur<=b[0];});
+    var pp=cvRub*br[1],mp=cc*br[2]*eur;return{v:Math.max(pp,mp),m:(pp>=mp)?(br[1]*100)+"% ст-ти":"мин "+br[2]+" €/см³"};}
+  var rt=dutyRate(cc,band);return{v:cc*rt*eur,m:rt+" €/см³"};}
+function calc(){
+  var usd=+$("usd").value||0,eur=+$("eur").value||0,krwr=+$("krwr").value||0;
+  var cc=+$("cc").value||0,kw=+$("kw").value||0,hp=+$("hp").value||0;
+  var a=ageYears(),band=bandOf(a);
+  var log=+$("log").value||0,brk=+$("brk").value||0,misc=+$("misc").value||0,rflog=+$("rflog").value||0;
+  var mk=1+((+$("fxAdd").value||0)/100);
+  var cv0 = state.mode==="lot" ? (+$("buyKrw").value||0)*(krwr/1000) : (+$("buyUsd").value||0)*usd;
+  var log0=log*usd, TS=cv0+log0;
+  var cvRub=cv0*mk, logR=log0*mk, fxPad=(cvRub-cv0)+(logR-log0);
+  var duty=0,dmode="",excise=0,vat=0,fee=0;
+  var pers=personalRoute();
+  if(pers){var d=dutyPersonal(cc,band,cv0,eur);duty=d.v;dmode=d.m;fee=FEE_PERSONAL;}
+  else{
+    var old7=a>7, mn=ettMin(cc,old7);
+    if(old7){duty=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)*cc*eur;dmode=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)+" €/см³ (>7 лет)";}
+    else{var pp=TS*R.eaeu.ett.adValorem, mp=(mn!==null?mn:R.eaeu.ett.fallbackMin)*cc*eur;duty=Math.max(pp,mp);
+         dmode=(pp>=mp?(R.eaeu.ett.adValorem*100)+"% ТС":"мин "+(mn!==null?mn:R.eaeu.ett.fallbackMin)+" €/см³")+" (б/у до 7 лет)";}
+    excise=hp*(+$("exRate").value||0);
+    vat=(TS+duty+excise)*R.rf.vat.value;
+    fee=feeScale(TS);
+  }
+  var isEv=state.fuel!=="ice";
+  var kwCapEff=isEv?R.rf.utilPref.kwCapEv:KW_CAP;
+  var eligible=pers&&kw<=kwCapEff&&state.im==="no"&&(isEv||cc<=R.rf.utilPref.ccMax);
+  var ai=band==="new"?0:1;
+  var kC=isEv?K_EV[powIdxEv(kw)][ai]:grpFor(cc)[powIdx(kw)][ai];
+  var kL=eligible?(band==="new"?R.rf.utilPref.neu:R.rf.utilPref.old):kC;
+  var util=BASE*kL, utilC=BASE*kC, surcharge=utilC-util;
+  var gov=duty+excise+vat+fee+util;
+  var vvo=cvRub+logR+gov+brk+misc;
+  var full=vvo+rflog;
+  var html=
+    '<div class="line"><span class="k">Цена в Корее</span><span class="v">'+rub(cv0)+'</span></div>'+
+    '<div class="line"><span class="k">Фрахт Корея→Владивосток</span><span class="v">'+rub(log0)+'</span></div>'+
+    '<div class="line total"><span class="k">Таможенная стоимость (курс ЦБ)</span><span class="v">'+rub(TS)+'</span></div>'+
+    
+    '<div class="line"><span class="k">Платежи государству</span><span class="v">'+rub(gov)+'</span></div>'+
+    '<div class="line sub2"><span class="k">'+(pers?"единая ставка ЕАЭС · ":"пошлина ЕТТ · ")+dmode+'</span><span class="v">'+rub(duty)+'</span></div>'+
+    (excise?'<div class="line sub2"><span class="k">акциз · '+$("exRate").value+' ₽/л.с. × '+hp+'</span><span class="v">'+rub(excise)+'</span></div>':'')+
+    (vat?'<div class="line sub2"><span class="k">НДС 22%</span><span class="v">'+rub(vat)+'</span></div>':'')+
+    '<div class="line sub2"><span class="k">таможенный сбор'+(pers?" · "+FEE_PERSONAL+" ₽ (личное)":" · шкала")+'</span><span class="v">'+rub(fee)+'</span></div>'+
+    '<div class="line sub2"><span class="k">утильсбор · '+(eligible?"льготный K="+kL:"коммерческий K="+kL)+'</span><span class="v">'+rub(util)+'</span></div>'+
+    '<div class="line"><span class="k">Брокер + ЭПТС + СБКТС</span><span class="v">'+rub(brk)+'</span></div>'+
+    '<div class="line"><span class="k">СВХ + перегон</span><span class="v">'+rub(misc)+'</span></div>'+
+    '<div class="line total"><span class="k">Себестоимость во Владивостоке</span><span class="v">'+rub(vvo)+'</span></div>'+
+    '<div class="line"><span class="k">Логистика по РФ</span><span class="v">'+rub(rflog)+'</span></div>'+
+    '<div class="line grand"><span class="k">Полная себестоимость</span><span class="v">'+rub(full)+'</span></div>';
+  var profit=null,pct=null;
+  if(state.mode==="deal"){var market=+$("market").value||0;
+    profit=market>0?market-full:null;pct=(profit!==null&&full)?profit/full*100:null;
+    html+='<div class="line"><span class="k">Рыночная цена в РФ</span><span class="v">'+(market>0?rub(market):"—")+'</span></div>'+
+      '<div class="line total"><span class="k">Выгода vs рынок</span><span class="v '+(profit!==null?(profit>=0?"pos":"neg"):"")+'">'+(profit!==null?rub(profit)+" · "+pct.toFixed(1)+"%":"нужна цена")+'</span></div>';}
+  else{var mk=+$("markupRub").value||0;
+    html+='<div class="line"><span class="k">Наценка</span><span class="v">'+rub(mk)+'</span></div>'+
+      '<div class="line total"><span class="k">Цена клиенту</span><span class="v">'+rub(full+mk)+'</span></div>';}
+  $("breakdown").innerHTML=html;
+  var cls="x",vt="—";if(pct!==null){cls=pct>=12?"g":pct>=6?"a":"r";vt=pct>=12?"🟢 ВЕЗТИ":pct>=6?"🟡 ТОНКО":"🔴 НЕ ВЫГОДНО";}
+  $("verdict").className="verdict "+cls;
+  $("verdict").innerHTML='<div class="vt">'+vt+(pct!==null?" · "+pct.toFixed(1)+"%":"")+'</div><div class="vm">'+
+    (pers?"физлицо, личное — единая ставка ЕАЭС":"коммерческий ввоз — ЕТТ + акциз + НДС 22%")+" · возраст "+a.toFixed(2)+" г. ("+bandName(band)+")</div>";
+  var f="";
+  if(RATE_SRC==="fx-stale")f+='<div class="flag">🔴 Курс не удалось получить на момент расчёта — показан курс от '+((window.ENCAR_FX&&window.ENCAR_FX.date)||"")+'. По правилу компании курс берётся на момент запроса: обновите его по ссылке на центробанк и впишите вручную. Такой расчёт клиенту не выдаётся.</div>';
+  if(RATE_SRC==="fallback")f+='<div class="flag">🔴 Курс валют не загрузился — подставлен сохранённый на '+FB.date+'. Такой расчёт клиенту не выдаётся.</div>';
+  if(RATE_SRC==="mirror")f+='<div class="flag amber">ℹ Курс получен через зеркало cbr-xml-daily.ru (данные ЦБ РФ). Прямой запрос к cbr.ru не прошёл — при сомнении сверить на cbr.ru вручную.</div>';
+  if(state.mc==="no"){
+    var y=+$("mYear").value||0,mm=+$("mMonth").value||7;
+    var a2=(declDate()-new Date(y,mm-1,15))/(365.2425*24*3600*1000),b2=bandOf(a2);
+    var altTxt="";
+    if(b2!==band){var dd=pers?dutyPersonal(cc,b2,cvRub,eur).v:null;
+      altTxt=' При подтверждении месяца категория станет «'+bandName(b2)+'»'+(dd!==null?', пошлина '+rub(dd)+' — разница '+rub(Math.abs(duty-dd)):'')+'.';}
+    f+='<div class="flag amber">⚠ Месяц выпуска не подтверждён → момент выпуска принят <b>01.07.'+y+'</b> (ЕЭК № 74, п. 5). Категория: '+bandName(band)+'.'+altTxt+'</div>';}
+  if(pers&&eligible)f+='<div class="flag">⚠ При продаже ранее 12 месяцев с даты ТПО доплачивается разница утильсбора до коммерческого уровня: <b>'+rub(surcharge)+'</b> по ставкам на день расчёта.</div>';
+  if(pers&&!eligible){var why=[];if(kw>kwCapEff)why.push("мощность "+kw+" кВт > "+kwCapEff);
+    if(!isEv&&cc>R.rf.utilPref.ccMax)why.push("объём "+cc+" см³ > "+R.rf.utilPref.ccMax+" см³");if(state.im==="yes")why.push("за 12 мес уже ввозили авто");
+    f+='<div class="flag">🔴 Льготный утильсбор не положен ('+why.join("; ")+') → коммерческий '+rub(util)+'.</div>';}
+  if(!pers){f+='<div class="flag amber">ℹ Коммерческая ветка: ступени возраста иные — до 5 / 5–7 / старше 7 лет. Ставка акциза подтверждена методикой только для 112,5–150 кВт (613 ₽/л.с.); вне диапазона — сверить по ст. 193 НК РФ.</div>';
+    if(ettMin(cc,false)===null)f+='<div class="flag">🔴 Объём '+cc+' см³ вне подтверждённых кодов 8703 23 (1500–3000 см³). Минимальная ставка ЕТТ ТРЕБУЕТ ПРОВЕРКИ — взято 0,44 €/см³.</div>';}
+  if(fxPad)f+='<div class="flag amber">ℹ К закупу и фрахту добавлено +'+$("fxAdd").value+'% к курсу ЦБ РФ ('+rub(fxPad)+'). Таможенные платежи посчитаны по официальному курсу.</div>';
+  f+='<div class="flag info">Сумма предварительная; финальную определяет таможенный орган. Источники: ЕЭК № 107 (ред. 24.02.2026), ЕЭК № 80 (ред. 22.01.2026), ЕЭК № 74 п. 5, ПП РФ № 1291 (ред. 06.02.2026), ПП РФ № 1637/№ 1638, ФЗ № 425-ФЗ (НДС 22%). Курс валют — cbr.ru, на момент расчёта.</div>';
+  $("flags").innerHTML=f;
+  $("foot").textContent="Момент выпуска: "+madeMoment().toLocaleDateString("ru-RU")+" · дата декларации: "+declDate().toLocaleDateString("ru-RU")+" · K утиля льгот./комм. = "+kL+" / "+kC;
+}
+(function(){var m=$("model");Object.keys(MODELS).forEach(function(k){var o=document.createElement("option");o.value=k;o.textContent=MODELS[k].label;m.appendChild(o);});
+  $("rdate").value=todayISO();syncRoute();buildLinks();loadRates();$("rateStatus").addEventListener("click",function(){loadRates();});
+  var tg=window.Telegram&&window.Telegram.WebApp;if(tg){try{tg.ready();tg.expand();}catch(e){}
+    ["lbDrom","lbAuto","lbAvito"].forEach(function(id){$(id).addEventListener("click",function(e){e.preventDefault();try{tg.openLink(this.href);}catch(_){window.open(this.href,"_blank");}});});}
+})();
+
+})();
+</script>
+<script>
+(function(){
+const R=window.ENCAR_RATES;const GRID={"ACURA":{"MDX":{"3500":{"2026":28750,"2025":24438},"2000":{"2026":21160,"2025":17986}},"TLX":{"2997":{"2025":22000}},"RDX A-SPEC":{"2000":{"2024":24000}},"INTEGRA":{"1500":{"2023":26000}}},"AITO":{"M5":{"1500":{"2025":35000}}},"ASTON MARTIN":{"DB11":{"4000":{"2022":118125,"2023":143650}},"DBX":{"4000":{"2022":131924,"2023":151712}},"VANTAGE":{"4000":{"2022":103701,"2023":119255}}},"AUDI":{"A3":{"1500":{"2023":13818,"2024":16256},"1400":{"2025":19125,"2026":22500},"1984":{"2025":22000}},"A4":{"2000":{"2023":14478,"2024":17033,"2025":20039,"2026":23575},"3000":{"2025":26979,"2026":31740}},"A5":{"2000":{"2023":19775,"2024":23471,"2025":27370,"2026":32200}},"A6":{"2000":{"2023":19474,"2024":22908,"2025":26951,"2026":31707},"3000":{"2023":32549,"2024":38292,"2025":45050,"2026":53000},"4000":{"2025":48450,"2026":57000}},"A6 D":{"3000":{"2025":27625,"2026":32500}},"A7":{"2000":{"2023":25180,"2024":29622,"2025":34850,"2026":41000},"3000":{"2023":33777,"2024":39738,"2025":46750,"2026":55000},"4000":{"2025":67252,"2026":79120}},"A8":{"4000":{"2026":108000,"2025":95000},"3000":{"2026":105000,"2024":80000,"2025":92000}},"Q3":{"2000":{"2023":24565,"2024":28900,"2025":34000,"2026":40000},"2500":{"2025":52133,"2026":61333}},"Q5":{"2000":{"2023":20825,"2024":24420,"2025":28730,"2026":33800}},"Q5 D":{"2000":{"2024":23929,"2025":28152,"2026":33120}},"Q7":{"2000":{"2023":43988,"2024":50592},"3000":{"2023":45050,"2024":52744,"2025":62052,"2026":73002},"4000":{"2025":91545,"2026":107700}},"Q8":{"3000":{"2023":46325,"2024":54400,"2025":63928,"2026":75210},"4000":{"2024":66109,"2025":77775,"2026":91500}},"RSQ8":{"3996":{"2024":215254}},"SQ5":{"2995":{"2025":57700}},"Q5 45 TFSI QUATTRO":{"1984":{"2025":28744}},"S7":{"3000":{"2025":63250}},"S5":{"3000":{"2025":70000,"2019":26400}},"SQ7":{"4000":{"2025":90000}},"RS7":{"4000":{"2023":110000}},"RS6":{"4000":{"2025":130000,"2024":110500}},"S6":{"4000":{"2026":130000}},"R8":{"2000":{"2025":250000}},"RS 3":{"2500":{"2026":100000,"2025":85000}},"RS 5":{"3000":{"2025":110000}}},"BAIC":{"HS":{"1998":{"2025":15150,"2015":3000}},"BJ60":{"2000":{"2023":28300}},"BJ40":{"2000":{"2023":26300,"2024":30850}}},"BAW":{"F7":{"1962":{"2025":13100,"2015":3000}},"WARRIOR":{"2378":{"2025":21800}},"6521MAB":{"2000":{"2026":13700,"2015":3000}},"M7":{"1962":{"2025":15200,"2015":3000}},"212.0":{"2000":{"2025":25000},"2400":{"2025":27000,"2024":23000}}},"BENTLEY":{"BENTAYGA":{"4000":{"2025":304175,"2024":264500,"2023":224825,"2022":191101,"2021":162438}},"CONTINENTAL GT":{"4000":{"2023":166175}},"FLYING SPUR":{"4000":{"2023":173552}},"FLYING SPUR 20MY":{"6000":{"2022":158355,"2023":182108}}},"BMW":{"2-SERIES":{"1500":{"2024":12070},"3000":{"2023":56525}},"3-SERIES":{"2000":{"2023":16889,"2024":19869,"2025":23375,"2026":27500},"3000":{"2025":26881,"2026":31625}},"5-SERIES":{"2000":{"2023":18117,"2024":21314,"2025":25075,"2026":29500},"3000":{"2023":21187,"2024":24926,"2025":29325,"2026":34500},"4400":{"2023":37431,"2024":44037,"2025":51808,"2026":60950}},"5-SERIES D":{"3000":{"2024":48065}},"6-SERIES":{"2000":{"2024":31573},"3000":{"2025":37145,"2026":43700}},"6-SERIES D":{"3000":{"2024":40000}},"7-SERIES":{"4400":{"2024":72300,"2025":85000,"2026":100000},"3000":{"2026":90000}},"8-SERIES":{"3000":{"2023":38076,"2024":44795,"2025":52700,"2026":62000},"4400":{"2024":54173,"2025":63733,"2026":74980}},"X1":{"2000":{"2025":16500,"2026":19000}},"X3":{"2000":{"2023":18688,"2024":21986,"2025":25866,"2026":30430},"3000":{"2024":31989,"2025":37634,"2026":44275}},"X4":{"2000":{"2024":23446,"2025":27582,"2026":32450},"3000":{"2024":34066,"2025":40078,"2026":47150}},"X4 D":{"2000":{"2025":27582,"2026":32450},"3000":{"2025":40078,"2026":47150}},"X5":{"3000":{"2024":41848,"2025":49300,"2026":58000},"4400":{"2023":46397,"2024":54585,"2025":64260,"2026":75600},"2000":{"2025":46000}},"X5 D":{"3000":{"2025":51166,"2026":60195}},"X5 M":{"4400":{"2025":113320}},"X6":{"3000":{"2023":53000,"2024":62000,"2025":73000,"2026":85500},"4400":{"2024":79000}},"X7":{"3000":{"2023":63255,"2024":74418,"2025":87550,"2026":103000},"4400":{"2024":119000,"2025":140000}},"XM":{"4400":{"2024":127500,"2025":150000},"3000":{"2025":120000}},"750E XDRIVE":{"3000":{"2025":70000}},"M3 COMPETITION M XDRIVE":{"3000":{"2025":60000}},"M8 COMPETITION":{"4400":{"2025":135000}},"X3M COMPETITION":{"2993":{"2025":45000}},"M4 COMPETITION M XDRIVE":{"2993":{"2025":73000}},"G5X":{"2998":{"2026":58000}},"M340I":{"2998":{"2025":27000}},"530E HYBRID":{"1998":{"2025":30000}},"430I":{"2000":{"2025":30846}},"M4":{"3000":{"2025":72300}},"M5":{"4400":{"2025":90000}},"M240I":{"3000":{"2025":44000}},"GRAN TURISMO":{"3000":{"2012":15000}},"425I GRAN COUPE":{"2000":{"2025":35000}},"X2 XDRIVE 20I":{"2000":{"2024":24000}},"Z4 SDRIVE":{"2000":{"2025":80000}},"Z4M":{"3000":{"2026":100000}},"M8":{"4400":{"2025":125000}},"X4M":{"4400":{"2025":75000}},"ALPINA XB7":{"4400":{"2026":170000}},"M6":{"4400":{"2025":140000}},"M850I":{"4400":{"2026":125000}},"X6 M COMPETITION":{"4400":{"2025":130000}},"550 E":{"3000":{"2026":50000}}},"BUICK":{"ENCLAVE":{"3600":{"2025":22100}},"GL8":{"1998":{"2025":37000}},"ENVISION":{"1998":{"2021":20000,"2025":33000}}},"BYD":{"DESTROYER 05":{"1500":{"2025":9500,"2026":11000,"2015":3000}},"CHAZOR":{"1500":{"2026":19000}},"CHAZOR 05":{"1500":{"2025":17000}},"DENZA":{"2000":{"2025":60500,"2026":67000}},"DENZA D8":{"1500":{"2026":75000}},"DENZA D9":{"1500":{"2025":67500,"2024":61000}},"DENZA N8L":{"2000":{"2026":53500,"2025":48000}},"DENZA N9":{"2000":{"2026":52000},"1500":{"2026":46500}},"DENZA Z9":{"2000":{"2026":46500}},"DESTROER 07":{"1500":{"2026":34000,"2025":31000,"2023":28000}},"FRIGATE":{"1500":{"2025":30500,"2026":34000}},"HAN":{"1500":{"2025":23000,"2024":21000,"2026":26000}},"HAN L":{"1500":{"2026":32000,"2025":29000}},"LEOPARD 5":{"1500":{"2025":36500,"2026":41000}},"LEOPARD 7":{"1500":{"2026":43000,"2025":39000}},"LEOPARD 8":{"2000":{"2025":52000,"2026":58000}},"QIN L":{"1500":{"2025":12000,"2026":13500}},"QIN L DM-I":{"1500":{"2026":19000,"2025":17000}},"QIN PLUS":{"1500":{"2026":14000,"2025":12500,"2015":3000}},"QIN PLUS DM-1":{"1500":{"2026":13000,"2025":12000,"2015":3000}},"SEAGULL":{"1500":{"2023":11000,"2024":11500,"2025":14000,"2026":15000}},"SEAL 05":{"1500":{"2026":12000,"2025":10500}},"SEAL 06":{"1500":{"2024":18000,"2025":20000,"2026":22000}},"SEAL 060 DM-1":{"1500":{"2026":19000,"2025":17000}},"SEAL 07":{"1500":{"2026":25000,"2025":22500,"2024":20000}},"SEAL LION 05":{"1500":{"2026":22500,"2025":20500}},"SEAL LION 06":{"1500":{"2026":25500,"2025":23000}},"SEAL LION 07":{"3000":{"2026":32000,"2025":28500},"1500":{"2026":27500}},"SONG L":{"1500":{"2024":17000,"2025":19000,"2026":21000}},"SONG PLUS DM-I":{"1500":{"2026":19000,"2025":17000}},"SONG PRO DM-1":{"1500":{"2026":16500,"2025":15000}},"TANG":{"1500":{"2025":32500,"2026":36000}},"TANGOM-P":{"1500":{"2026":51000,"2025":45500,"2024":41000}},"XIA":{"1500":{"2025":42000}},"SHARK 6 DMO":{"1500":{"2025":55000}},"SHARK 6":{"1500":{"2026":36500}}},"CADILLAC":{"ESCALADE":{"6200":{"2022":63000,"2023":74000,"2024":87000,"2025":102000,"2026":117000},"3000":{"2024":75000}},"XT4":{"2000":{"2024":27419,"2025":32258,"2026":37950}},"XT5":{"3600":{"2022":26422},"2000":{"2025":35355,"2026":41594}},"XT6":{"2000":{"2025":46023,"2026":54145},"3600":{"2024":61362,"2025":72191,"2026":84931}},"CADILLAC XT 5":{"1998":{"2025":43151}},"CADILLAC XT 6":{"1998":{"2025":49158}},"CT4":{"2000":{"2022":34000}}},"CHANGAN":{"A 06":{"1500":{"2026":23000,"2025":20500}},"CS35 PLUS":{"1500":{"2025":15500,"2026":17000}},"CS55 PLUS":{"1500":{"2025":12000,"2026":13500}},"CS75":{"1500":{"2026":14000},"2000":{"2026":15500}},"CS75 PLUS":{"1500":{"2026":15000,"2025":13500},"1998":{"2026":16000,"2025":14000}},"CS95":{"1998":{"2026":21500}},"EADO":{"1500":{"2026":12000},"1400":{"2026":12000,"2015":3000}},"EADO PLUS":{"1400":{"2026":16000,"2025":14500}},"EXPLORER":{"2000":{"2026":28500,"2025":25500,"2024":23000}},"FENGJINGRV":{"2000":{"2026":54500}},"HUNTER":{"2000":{"2026":24500,"2025":22000}},"KAICENE RUIXING M60":{"1600":{"2026":8500}},"KAICHEN GUNOS":{"1500":{"2026":9500}},"KYC V3":{"1500":{"2026":18000}},"LAMORE":{"1500":{"2026":18000,"2025":16000,"2024":14300}},"OSHAN Z6":{"1500":{"2026":20000,"2025":18000,"2024":16500,"2023":15000}},"QIYUAN NEVO A07":{"1500":{"2026":30500,"2025":27300}},"QIYUAN Q05":{"1500":{"2025":11400}},"QIYUANA Q05":{"1500":{"2026":12500}},"QIYUANA Q07":{"1500":{"2026":21000}},"QIYUANA05":{"1500":{"2025":14000,"2026":15400}},"STAR":{"1400":{"2026":17700,"2025":16000}},"UNI-K":{"2000":{"2025":24750,"2024":22300,"2026":27500}},"UNI-T":{"1500":{"2026":19900,"2025":18000,"2024":16000},"2000":{"2026":22400,"2025":20200,"2024":18000}},"UNI-V":{"2000":{"2024":19600,"2025":21800,"2026":24200},"1500":{"2026":22800,"2025":20500,"2024":18500,"2023":16600}},"UNI-Z":{"1500":{"2025":14700,"2026":16328}},"X5 PLUS":{"1500":{"2026":9900}},"X5 PRO":{"1500":{"2026":11000}},"X7PLUS":{"1500":{"2026":17050,"2025":15400}},"YIDONG":{"1500":{"2026":12100}},"Z6IDDPLUS":{"1500":{"2026":22880,"2025":20600}},"CS75 PRO":{"1500":{"2026":15000},"1998":{"2026":16000}},"HUNTER PLUS":{"2000":{"2026":29500}},"HUNTER K50":{"2000":{"2026":32000}},"QIYUAN A06":{"1500":{"2026":23500,"2025":20000}}},"CHERY":{"ARRIZO 5":{"1500":{"2026":15800,"2025":14200}},"ARRIZO 8":{"1598":{"2026":21300,"2025":19000}},"EQ3":{"1500":{"2025":20800,"2026":23100}},"EQ7":{"1500":{"2025":23800,"2026":26400}},"EXEED":{"1998":{"2026":25000,"2025":22500}},"OMODA 5":{"1500":{"2026":29000,"2025":26000}},"TIGGO 4":{"1500":{"2023":13400,"2024":14800,"2025":16500,"2026":18300}},"TIGGO 7 PRO":{"1500":{"2023":14500,"2024":16000,"2025":17800,"2026":19800}},"TIGGO 7 PRO MAX":{"1598":{"2026":20500,"2025":18500}},"TIGGO 8":{"1500":{"2026":18900,"2025":17000,"2024":15300},"1600":{"2026":25500,"2025":23000,"2024":20600},"2000":{"2026":30500,"2025":27400,"2024":24600}},"TIGGO 8 PRO":{"1600":{"2023":18600,"2024":20600,"2025":23000,"2026":25500},"2000":{"2026":30600,"2025":27500,"2024":24800},"1598":{"2026":25300,"2025":22800}},"TIGGO 8 PRO MAX":{"2000":{"2025":23800,"2026":26400}},"TIGGO 9":{"1998":{"2025":37600,"2026":41800}},"TIGGO X":{"1500":{"2026":16500,"2025":14800}},"FULWIN T11":{"1500":{"2025":43000}}},"CHEVROLET":{"CAMARO":{"2000":{"2023":12889,"2024":15164,"2025":17840,"2026":20988},"3600":{"2024":16482,"2025":19391,"2026":22813}},"CAPTIVA":{"1500":{"2024":9392,"2025":11050,"2026":13000,"2015":3000}},"CORVETTE":{"6200":{"2025":53295,"2026":62700},"5463":{"2025":46000}},"CRUZ":{"1400":{"2020":3825,"2021":4675,"2022":7565,"2015":3000},"1500":{"2021":7310}},"EQUINOX":{"1500":{"2023":8075,"2024":10200},"1998":{"2026":23000}},"GROOVE PREMIER":{"1500":{"2025":15953,"2026":18768}},"SPARK":{"1000":{"2024":3974,"2025":4675,"2026":5500,"2015":3000}},"SUBURBAN":{"5400":{"2025":68234,"2026":80275},"6200":{"2024":59480,"2025":69976,"2026":82325},"3000":{"2022":35000,"2025":57000}},"TAHOE":{"5300":{"2025":38250,"2026":45000},"5400":{"2024":34000},"6200":{"2024":46240,"2025":54400,"2026":64000},"5328":{"2025":38250},"2700":{"2025":35344},"3000":{"2025":37000}},"TRAILBLAZER":{"1400":{"2023":8500,"2024":9860,"2015":3000},"3600":{"2025":13175,"2026":15500,"2015":3000}},"TRAX":{"1400":{"2024":7650,"2015":3000}},"COBALT":{"1500":{"2026":12476,"2015":3000}},"LACETTI":{"1500":{"2026":13350,"2015":3000}},"NEXIA":{"1500":{"2026":15774,"2015":3000}},"TRAVERSE PREMIERA":{"3600":{"2026":53815}},"MALIBU":{"1998":{"2026":11775,"2015":3000},"1400":{"2022":6375},"1500":{"2022":6375,"2023":7225,"2024":8500},"2000":{"2021":6460}},"MONZA":{"1500":{"2025":8000,"2026":8700,"2024":7500,"2015":3000}},"EXPLORER EXPRESS":{"6000":{"2017":20000}},"TRAVERSE":{"3000":{"2024":35000},"3600":{"2025":21335,"2026":25100}},"DAMAS":{"800":{"2025":5473,"2026":6439,"2015":3000}},"IMPALA":{"2500":{"2021":8500,"2015":3000}},"TRACKER":{"1000":{"2025":16117,"2026":18961}},"LABO":{"998":{"2023":8550,"2015":3000}},"SILVERADO":{"2727":{"2023":23500}},"COLORADO":{"2727":{"2023":19000,"2024":21210}}},"CHRYSLER":{"300.0":{"3600":{"2022":13600}}},"CITROEN":{"C3 AIRCROSS":{"1200":{"2025":12750,"2026":15000,"2015":3000}},"C5 X":{"1600":{"2025":19000}}},"DEEPAL":{"S09":{"1500":{"2025":41000}}},"DODGE":{"CHALLENGER":{"3600":{"2020":8236,"2021":9690},"6200":{"2023":14450},"6500":{"2022":13728,"2023":16150},"5654":{"2025":22600},"3604":{"2025":18600}},"CHARGER":{"3600":{"2024":14089,"2025":16575,"2026":19500},"6200":{"2025":23700}},"DURANGO":{"5700":{"2023":17000},"6400":{"2024":21250}},"JOURNEY SE":{"2400":{"2021":7225}},"RAM":{"5700":{"2025":42330,"2026":49800},"6200":{"2024":73525},"3000":{"2025":40400,"2024":34300},"4000":{"2026":70000}},"DODGECHARGERGT":{"3604":{"2025":16575}},"RAM 1500":{"3000":{"2024":37200}},"RAM 1500 TUNGSTEN":{"3000":{"2026":95000}},"RAM 2500":{"6700":{"2026":80000}}},"DONGFENG":{"GLORY560":{"1798":{"2025":9600,"2015":3000}},"AEOLUS HAOJI":{"1500":{"2026":8900}},"AEOLUS SHINE":{"1500":{"2026":9000}},"AEOLUS SHINE MAX":{"1500":{"2026":13800}},"C56":{"1500":{"2025":8800,"2015":3000}},"DXK6":{"1500":{"2025":14100,"2015":3000}},"FENGONE5":{"1500":{"2025":19600}},"FENGONIX5":{"1500":{"2025":10000}},"FORTHING LINGZHI PLUS":{"2000":{"2025":15000}},"FORTHING M5 PLUS":{"1600":{"2025":11000}},"FORTHING T5 EVO":{"1500":{"2026":15000}},"LINGZHI M5 PLUS":{"1500":{"2025":11500,"2015":3000}},"M5":{"1600":{"2025":10000,"2015":3000}},"PALADIN":{"2000":{"2025":13750,"2015":3000}},"LANDIAN E5":{"1500":{"2024":13200}},"YACHT":{"1500":{"2024":21000}},"AEOLUS L7":{"1500":{"2025":19300,"2024":16400}},"AEOLUS HAOHAN":{"1500":{"2025":15000}},"RICH 6":{"2400":{"2025":19958}},"M-HERO M817":{"1500":{"2025":52000,"2026":59800}},"EP007":{"1500":{"2025":19000,"2026":22000}},"EP008":{"1500":{"2025":28000}},"BOX":{"1500":{"2025":11500,"2026":14000,"2015":3000}},"XIAOKANG K07S":{"1300":{"2025":7000}},"RUIQI 6":{"2400":{"2025":18000}},"AEOLUS L8":{"1500":{"2025":21000}},"YIPAI008":{"1500":{"2025":28000}},"RICH ESC":{"2500":{"2026":15000}}},"EXEED":{"LX":{"1500":{"2024":13100},"1600":{"2024":14500},"1598":{"2025":21350}},"TXL":{"1500":{"2024":19400},"1600":{"2024":20500}},"TXL 2.0":{"2000":{"2024":21000}},"VX":{"1600":{"2023":21000},"2000":{"2023":23920,"2024":28139,"2025":33950,"2026":39000}},"RX":{"2000":{"2025":31740,"2024":26980,"2026":36500}},"TX":{"1998":{"2025":25850}}},"FAW":{"FAWBESTUNEB70":{"1989":{"2025":12650}},"BESTUNE T99":{"2000":{"2024":9200}}},"FERRARI":{"F8 SPIDER":{"4000":{"2022":181050,"2023":208208}},"F8 TRIBUTO":{"4000":{"2022":267459,"2023":268569}},"PORTOFINO M":{"3900":{"2022":150790,"2023":173068,"2024":245501}},"ROMA":{"3900":{"2023":199448}},"SF90 STRADALE":{"4000":{"2023":311848}},"PUROSANGUE":{"6500":{"2025":325000}},"ITALIA":{"4500":{"2014":160000}},"LUSSO":{"3900":{"2019":120000}}},"FIAT":{"ABARTH 500":{"1400":{"2022":26992}},"DOBLO":{"1400":{"2023":6800,"2015":3000},"1300":{"2024":8000,"2015":3000}},"DUCATO":{"2200":{"2025":42500,"2026":50000}}},"FORD":{"BRONCO":{"2700":{"2024":34000},"1500":{"2025":30400},"3000":{"2026":49930,"2025":42440},"2300":{"2026":45000}},"ECOSPORT":{"1000":{"2023":6000,"2015":3000},"2000":{"2024":9100,"2025":10700,"2026":12600,"2015":3000}},"ESCAPE":{"2000":{"2023":8100,"2015":3000}},"EXPEDITION":{"3500":{"2024":31822,"2025":37438,"2026":44045}},"EXPLORER":{"2300":{"2023":17850,"2024":20528,"2026":30410},"3300":{"2026":36760},"3000":{"2026":34555}},"EDGE":{"2000":{"2023":16600}},"F150":{"3300":{"2022":42500},"3500":{"2023":47389,"2024":55752,"2025":65590,"2026":77165},"5000":{"2025":75000},"2700":{"2025":53000},"6200":{"2025":68000}},"F350":{"7300":{"2024":63920}},"F550":{"6700":{"2025":69500,"2026":82000}},"FIESTA":{"1600":{"2021":5100,"2015":3000}},"FOCUS":{"2000":{"2019":5100,"2015":3000}},"FUSION":{"1500":{"2023":5950,"2015":3000},"2000":{"2022":8500},"2500":{"2022":9350}},"MUSTANG":{"2300":{"2022":13600,"2023":14875,"2024":16575},"5000":{"2025":25492,"2026":29990},"2261":{"2025":19508}},"RANGER":{"2000":{"2025":37570,"2026":44200}},"TRUGANO":{"2000":{"2024":82156}},"TOURNEO":{"2000":{"2025":50000}},"ESCORT":{"1500":{"2023":12000}},"TRANSIT":{"2000":{"2025":27700},"2300":{"2025":29362}},"BRONCO RAPTOR":{"3000":{"2025":50000}},"F-SERIES":{"3500":{"2026":75000}}},"FOTON":{"FORLAND":{"2000":{"2026":27000}}},"GAC":{"GN 8":{"2000":{"2023":24000}},"GS8":{"2000":{"2025":23000,"2026":26500}},"TRUMPCHIM":{"1500":{"2026":23800}},"TRUMPCHI M8":{"1991":{"2025":35500,"2026":41785}},"TRUMPCHI E9":{"2000":{"2025":38600}},"TRUMPCHI S7":{"1500":{"2025":30400}},"TRUMPCHI E8":{"2000":{"2025":33100}},"AION I60":{"1500":{"2025":17000}}},"GEELY":{"ATLAS":{"2000":{"2025":23500,"2024":21200,"2026":26180}},"ATLAS 23":{"1500":{"2026":20700,"2025":18600}},"BINYUE":{"1500":{"2026":26300,"2025":23600,"2024":21300}},"BOYUEL":{"2000":{"2026":28500,"2025":25600},"1500":{"2026":26600,"2025":24000}},"COOLRAY":{"1500":{"2024":12700,"2026":15620,"2025":14000}},"DIHAO":{"1500":{"2026":11000}},"EMGRAND":{"1500":{"2026":12650,"2025":11400,"2015":3000}},"EX5":{"1500":{"2025":22300,"2026":24750}},"FARIZON FX":{"1800":{"2026":36700,"2025":33000}},"GALAXY A7":{"1500":{"2026":17300,"2025":15500}},"GALAXY E8":{"1500":{"2025":28500,"2026":31625}},"GALAXY M7":{"1500":{"2026":19700,"2025":17700}},"GALAXY M9":{"1500":{"2026":45600,"2025":41000}},"GALAXY STARSHINE 6":{"1500":{"2026":22800,"2025":20500}},"GALAXY STARSHIP 7":{"1500":{"2025":22800,"2026":25300}},"HAOYUE":{"2000":{"2026":23200,"2025":20800}},"MONJARO":{"2000":{"2025":35300,"2024":31800,"2026":39500}},"OKAVANGO":{"2000":{"2025":23600,"2024":21200,"2026":26180}},"PREFACE":{"1969":{"2026":22770,"2025":20500}},"TUGELLA":{"2000":{"2024":28400,"2025":31600,"2026":35090}},"X3":{"1500":{"2026":16500,"2025":14800}},"GALAXY L7":{"1500":{"2025":20500}},"BOYUE COOL":{"1500":{"2025":21500}},"GALAXY STARSHINE 7":{"1500":{"2026":25500}}},"GENESIS":{"EQ 900":{"3400":{"2019":6120}},"G70":{"2000":{"2023":16751,"2024":19707,"2025":23185,"2026":27277},"2500":{"2024":20150},"3400":{"2025":29692,"2026":34932}},"GV70":{"2200":{"2025":28654,"2026":33710},"2500":{"2025":31448,"2026":36998,"2024":29500},"3500":{"2025":36164,"2026":42546}},"G80":{"2200":{"2022":19917},"2500":{"2025":35603,"2026":41886},"3300":{"2022":22000},"3500":{"2025":32300,"2026":38000},"3800":{"2022":24000}},"GV80":{"2500":{"2025":30873,"2026":36321},"3000":{"2025":35013,"2026":41192},"3500":{"2023":40089}},"G90":{"3500":{"2025":33660,"2026":39600}}},"GMC":{"SAVANNA":{"6600":{"2024":114172,"2025":134320}},"TERRAIN":{"1500":{"2023":9350}},"YUKON":{"5400":{"2024":35105,"2025":41329,"2026":48622},"6200":{"2024":37281,"2025":43860,"2026":51600},"2993":{"2025":33500}},"SAVANA3":{"6600":{"2025":47790}},"YUKON DENALI":{"6162":{"2025":43860}},"SIERRA":{"2700":{"2025":47000},"6600":{"2025":57000}}},"GREAT WALL":{"2030BE21M":{"2000":{"2025":30000}},"H5":{"2000":{"2025":17528}},"VIEWTHESTAR":{"2000":{"2025":65100}},"WINGLE":{"2400":{"2026":16050}},"POER  POER KINGKONG":{"2000":{"2025":25900}},"POER":{"2000":{"2025":25900,"2024":22000}}},"HAIMA":{"X7":{"1600":{"2025":26000}}},"HAVAL":{"DARGO":{"2000":{"2023":13500,"2024":16000,"2025":19000,"2026":21850}},"H6":{"1500":{"2024":15018},"2000":{"2024":17774,"2025":18500,"2026":20995}},"JOLION":{"1500":{"2024":14315,"2025":15500,"2026":16877}},"HS5":{"2000":{"2025":28200}},"BIGDOG":{"1998":{"2026":25000,"2025":21550}},"H5":{"2000":{"2024":17500,"2025":20600,"2026":23700}},"H6 GT":{"1998":{"2025":17930}},"MENGLONG HI4":{"1500":{"2025":21000}},"XIAOLONG MAX HI4":{"1500":{"2024":23000}},"H9":{"2000":{"2025":25887}},"WINGLE 7":{"2000":{"2024":17000}}},"HONDA":{"ACCORD":{"1500":{"2024":9754,"2025":11475,"2026":13500,"2015":3000},"2000":{"2023":10625}},"CIVIC":{"1500":{"2023":8075,"2015":3000},"2000":{"2022":7225,"2023":8500,"2024":11475}},"CR-V":{"1500":{"2025":13600,"2026":16000,"2015":3000},"2400":{"2021":7480,"2022":8755},"2000":{"2025":27340}},"FIT":{"1500":{"2023":7225,"2015":3000}},"HR-V":{"1800":{"2023":9520,"2024":11199,"2025":13175,"2026":15500,"2015":3000}},"ODYSSEY":{"2400":{"2018":8925},"3500":{"2024":20952,"2025":35000,"2026":29000},"1993":{"2025":34115}},"PILOT":{"3500":{"2024":15385},"3471":{"2025":18110}},"INSPIREE HYBRID":{"2000":{"2025":15233}},"HONDACR-VHIBRID":{"1993":{"2025":17600}},"VEZEL":{"1500":{"2020":9600,"2023":12000,"2024":15500}},"BREEZE":{"1500":{"2025":18400}}},"HONGQI":{"HS7":{"1989":{"2025":43000}},"H5":{"1989":{"2025":31481}},"H9":{"1989":{"2025":38000}},"HS5":{"1989":{"2024":31481}},"HQ9":{"2000":{"2025":42000}},"H6":{"1989":{"2024":33000}},"H3":{"1500":{"2025":23000}}},"HUAWEI":{"AITO M5":{"1500":{"2025":32385,"2026":38100}},"MAEXTRO S800":{"1500":{"2025":98000}}},"HYUNDAI":{"ACCENT":{"1400":{"2025":8309,"2026":9775,"2015":3000},"1600":{"2025":10264,"2026":12075,"2015":3000}},"AVANTE":{"1600":{"2022":7062,"2023":8309,"2024":9775,"2015":3000},"2000":{"2025":13001,"2026":15295,"2015":3000},"1591":{"2025":11505,"2015":3000}},"BAYON":{"1400":{"2025":23254,"2026":27357}},"CASPER":{"1000":{"2025":9010,"2026":10600,"2024":7650,"2015":3000}},"GRANDEUR":{"2400":{"2025":15151,"2026":17825},"2500":{"2023":10752,"2024":13685,"2025":16100},"3000":{"2023":12219,"2024":17000},"3300":{"2023":15230},"3470":{"2025":24500}},"GRAND STAREX":{"2400":{"2022":11300,"2023":13294,"2024":15640}},"H-1":{"2200":{"2024":17595},"2400":{"2023":12708}},"PALISADE":{"2200":{"2026":33000,"2025":28050,"2024":23800},"3800":{"2026":43125,"2025":36600,"2024":31000},"3500":{"2026":41000},"2500":{"2026":39000,"2025":33150}},"PORTER":{"2500":{"2024":11815,"2025":13855,"2026":16300,"2015":3000}},"SANTA FE":{"2200":{"2023":11475,"2024":13294,"2025":15640,"2026":18400},"2400":{"2023":12219},"2500":{"2025":16911,"2026":19895},"3500":{"2024":31158,"2025":34960,"2026":36656},"1598":{"2026":17530,"2025":13763},"2000":{"2026":17664,"2025":15015,"2024":12762}},"SONATA":{"2500":{"2025":20700,"2026":23800},"2000":{"2025":19500,"2026":22500},"1598":{"2024":16000},"1600":{"2025":18000,"2026":20700},"2400":{"2022":10800},"1500":{"2025":18000,"2026":21000}},"STARIA":{"2200":{"2024":15787,"2025":18572,"2026":21850},"3500":{"2024":20774,"2025":24438,"2026":28750},"1600":{"2025":20800}},"TUCSON":{"1600":{"2024":14000},"2000":{"2023":10264,"2024":12750,"2025":14662,"2026":17250},"2400":{"2021":9350,"2022":10264,"2023":11730},"2500":{"2024":14314,"2025":16618,"2026":19550},"1598":{"2025":16000,"2026":18400}},"GV70":{"2497":{"2025":31448}},"KONA":{"1591":{"2025":9320},"1600":{"2023":7771,"2024":7918},"2000":{"2024":10137,"2025":11926,"2026":14030,"2015":3000}},"VENUE":{"1598":{"2025":17600},"1600":{"2023":12800}},"MUFASA":{"2000":{"2025":18000,"2026":21000}},"ELANTRA":{"1500":{"2026":10000,"2025":8500,"2015":3000},"1600":{"2026":13900,"2025":11815,"2024":9926,"2023":8500,"2015":3000},"2000":{"2026":14950,"2025":12708,"2024":11050,"2023":9198,"2015":3000},"1800":{"2015":3000}},"CUSTO":{"1975":{"2026":20780}},"STARIA LOUNGE":{"2199":{"2026":21850,"2025":18573}},"SANTA FE HYBRID":{"1598":{"2025":12500}},"GRANDEUR HYBRID":{"2359":{"2025":15200},"1598":{"2025":13940}},"SONATA HYBRID":{"1999":{"2025":13700}},"SANTA CRUZ":{"2500":{"2022":17100}},"LAFESTA":{"1500":{"2025":14000}},"CRETA":{"2000":{"2025":11730,"2026":13800,"2015":3000}},"I30":{"1500":{"2025":18259,"2026":21482}},"I20":{"1500":{"2025":16000}},"VELOSTER":{"1600":{"2022":6200,"2015":3000}}},"INEOS":{"GRENADIER":{"3000":{"2024":73000}}},"INFINITI":{"QX50":{"3000":{"2022":15300},"2000":{"2023":17000,"2024":20060}},"QX55":{"2000":{"2024":23015,"2025":27077,"2026":31855}},"Q60":{"3500":{"2023":20400}},"QX60":{"3500":{"2021":18424,"2022":21675,"2023":25500,"2025":35100},"2500":{"2025":40000},"2000":{"2025":36000}},"Q70":{"3700":{"2021":14450}},"QX80":{"5600":{"2023":45050,"2024":55250},"5552":{"2025":65030},"3500":{"2024":69108,"2025":79475}},"INFINITI":{"5552":{"2025":63550}}},"ISUZU":{"MU-X":{"3000":{"2025":26392,"2026":31050}},"JIMNY":{"2438":{"2025":14430,"2015":3000}}},"JAC":{"T9 HUNTER":{"2000":{"2025":25070,"2024":19350}},"T8":{"2400":{"2024":17000}},"X6":{"2000":{"2025":10000,"2015":3000}},"T6":{"2400":{"2026":15300}},"HUNTER PLUS":{"2000":{"2026":30800}}},"JAECOO":{"J7":{"1598":{"2026":17800}}},"JAGUAR":{"E-PACE":{"2000":{"2023":9350}},"F-PACE":{"2000":{"2024":18785},"5000":{"2024":33150}},"F-TYPE":{"2000":{"2023":27030}}},"JEEP":{"COMPASS":{"2400":{"2021":14195,"2025":19550,"2026":23000},"2500":{"2023":17000}},"GRAND CHEROKEE":{"3600":{"2023":36307,"2024":42714,"2025":50252,"2026":59120},"5700":{"2025":54948,"2026":64645},"1995":{"2025":36500}},"GRAND WAGONEER":{"6500":{"2024":91429},"2993":{"2025":130100}},"RENEGADE":{"2400":{"2023":8075,"2015":3000}},"WRANGLER":{"2000":{"2024":29622,"2025":34850,"2026":41000},"3600":{"2025":37060,"2026":43600},"6500":{"2024":39738,"2025":46750,"2026":55000}},"WRANGLER RUBICON":{"1995":{"2025":34850},"3604":{"2025":37060},"6417":{"2025":47700}},"WRANGLER RUBICON 392":{"6417":{"2025":47700}},"WRANGLER UNLIMITED RUBICON":{"1995":{"2025":34850}},"GLADIATOR":{"3600":{"2024":42500}}},"JETOUR":{"DASHING":{"1600":{"2023":13700,"2025":18650,"2024":16200,"2026":21500}},"X70":{"1600":{"2024":15180,"2025":17450,"2026":20000}},"X3":{"1500":{"2026":9600}},"X7":{"2000":{"2026":15900}},"TRAVELER":{"1998":{"2025":19600}},"L 9":{"1500":{"2025":23000}},"T2":{"1500":{"2024":21000,"2023":17900},"2000":{"2025":24000,"2024":22660,"2026":28750}},"SHANHAI L6":{"1500":{"2025":18000,"2026":21000,"2024":18000}},"SHANHAI L7":{"1500":{"2026":27000,"2025":22950,"2024":21000}},"SHANHAI L9":{"1500":{"2024":25000}},"SHANHAI T2":{"2000":{"2025":24000},"1500":{"2026":24000}},"X90":{"1600":{"2025":18400,"2026":21600}},"G700":{"2000":{"2026":40000}}},"JINBEI":{"SEALION":{"1500":{"2026":6806}}},"JMC":{"DAODAO":{"2300":{"2025":16320,"2026":19200}},"JX6505T-L6":{"2000":{"2023":15000}}},"KIA":{"BONGO":{"2400":{"2026":16800,"2025":14600,"2024":13000,"2015":3000}},"CEED":{"1600":{"2025":17200,"2024":14500,"2026":19700}},"К3":{"1600":{"2026":11500,"2025":9775,"2024":8309,"2023":7062,"2015":3000}},"К5":{"2500":{"2025":20700,"2026":23800},"2000":{"2025":17250,"2026":20000},"1598":{"2025":16200,"2026":18600}},"К8":{"2500":{"2026":24725,"2025":21016,"2024":17864},"3500":{"2026":27025,"2025":22971,"2024":19526},"1600":{"2026":22720}},"К9":{"3800":{"2026":25300,"2025":21505,"2024":18279,"2023":15537,"2022":13207},"3300":{"2024":17595,"2023":14272}},"MOHAVE":{"3000":{"2026":23000,"2025":19550,"2024":16618,"2023":14125}},"MORNING":{"1000":{"2026":5750,"2025":4888,"2024":3910,"2023":3421,"2015":3000}},"PIKANTO":{"1000":{"2026":13631,"2025":11586,"2015":3000}},"K9":{"3342":{"2026":24375}},"SELTOS":{"1600":{"2026":9500,"2025":8075,"2024":6863,"2023":5700,"2015":3000},"1500":{"2026":9299,"2025":7913,"2015":3000},"2000":{"2026":10228,"2025":8693,"2024":7389,"2023":6280,"2015":3000}},"CARNIVAL":{"1975":{"2026":17250},"2200":{"2026":17250,"2025":14700,"2024":12500,"2023":10600},"3500":{"2026":24150,"2025":20600,"2024":17850,"2023":15000},"3300":{"2023":14700,"2021":10300},"1600":{"2025":14100}},"FORTE":{"1591":{"2025":10800,"2015":3000},"2000":{"2024":8798,"2023":8309,"2022":7527,"2021":6354,"2015":3000}},"K8":{"1598":{"2025":19300}},"SORENTO":{"1598":{"2024":15700},"3500":{"2025":23000,"2026":26400,"2024":19550},"2500":{"2025":20400,"2026":23500,"2024":16618},"2200":{"2023":13685,"2022":11730},"2000":{"2022":11339,"2021":9775,"2020":8211,"2019":7331},"1600":{"2022":11339,"2025":18000},"2400":{"2022":10264,"2021":8993,"2020":8309},"3300":{"2020":10264,"2018":8309}},"SPORTAGE":{"2497":{"2025":27600},"1999":{"2024":21114},"1598":{"2024":19003},"1600":{"2025":22356,"2026":25700},"2000":{"2025":24840,"2026":28500},"2500":{"2026":31700},"2400":{"2023":19941,"2022":16950,"2021":14407}},"К7":{"2400":{"2024":14125},"3000":{"2024":14662,"2023":12708,"2022":11241,"2021":8993},"2500":{"2023":12219}},"RAY":{"1000":{"2024":4399,"2023":3910,"2015":3000}},"RIO":{"1600":{"2024":7820,"2023":7331,"2015":3000}},"OPTIMA":{"2000":{"2023":8798,"2022":8553,"2021":7820},"2400":{"2023":12414,"2022":10557,"2021":9064},"1600":{"2021":6800,"2020":6354,"2019":3910,"2015":3000}},"CARENS":{"2000":{"2021":8300}},"CADENZA":{"3400":{"2019":7204}},"RONDO":{"2000":{"2018":4888}},"TASMAN":{"2500":{"2025":43000}},"KX3":{"1500":{"2024":12700}},"SONET":{"1500":{"2024":12000}},"CERATO":{"1600":{"2026":12075,"2025":10264,"2024":8724,"2023":7415,"2015":3000},"2000":{"2026":17693,"2025":15039,"2015":3000}},"SOUL":{"1600":{"2026":12650,"2025":10752,"2024":9140,"2015":3000},"2000":{"2026":13800,"2025":11730,"2024":9970,"2023":8798,"2015":3000}},"STINGER":{"2500":{"2026":20125,"2025":17106,"2024":14540},"3300":{"2026":21275,"2025":18084,"2024":15371,"2023":13065},"2000":{"2023":12219,"2022":9775,"2021":8309}},"TELLURIDE":{"3800":{"2026":23000,"2025":19550,"2024":16618,"2023":14125,"2022":12007}},"SEDONA":{"3300":{"2023":11926}},"SPORTAGE ACE":{"2000":{"2024":14200,"2025":16400}},"KX1":{"1500":{"2024":10753}}},"LAMBORGHINI":{"AVENTADOR":{"6500":{"2021":211650,"2024":407950,"2025":479941}},"HURACAN":{"5200":{"2022":201826,"2024":237617,"2025":279549}},"URUS":{"4000":{"2021":179939,"2022":211692,"2024":249050,"2025":293000}}},"LAND ROVER":{"DEFENDER":{"2000":{"2023":34408,"2025":49950,"2026":58765},"3000":{"2025":51710,"2026":60835},"5000":{"2025":51808,"2026":60950}},"DISCOVERY LR4":{"3000":{"2024":38807}},"DISCOVERY SPORT":{"2000":{"2025":39344,"2026":46288}},"EVOQUE":{"2000":{"2025":31378,"2026":36915}},"RANGE ROVER":{"3000":{"2023":89734,"2024":105570,"2025":124200},"4400":{"2023":115540,"2024":135579,"2025":159505},"5000":{"2023":125767,"2024":147961,"2025":174072}},"RANGE ROVER SPORT":{"3000":{"2024":105198,"2025":123762}},"VELAR":{"2000":{"2023":46612,"2024":54838,"2025":64515,"2026":75900},"3000":{"2025":84224}},"LAND ROVER DEFENDER":{"4999":{"2025":51808},"4400":{"2025":140000}},"LAND ROVER RANGE ROVER L460":{"4395":{"2025":159505,"2024":135579},"2996":{"2024":105570,"2025":126486}},"LAND ROVER RANGE ROVER SPORT L461":{"4395":{"2024":208098,"2025":239315},"2996":{"2024":105570}},"LAND ROVER RANGE ROVER EV OQUEL551":{"1997":{"2025":31378,"2026":36915}},"LAND ROVER RANGE ROVER VELAR L560":{"1997":{"2025":64515,"2026":75602}},"LAND ROVER DEFENDER L663":{"4999":{"2025":51808},"2996":{"2026":60861}},"RANGE ROVER P530 AB LWB":{"4000":{"2025":172500}},"RANGE ROVER P460E":{"3000":{"2026":140000}}},"LEAPMOTOR":{"С11":{"1500":{"2025":21500}}},"LEXUS":{"600 TURBO SPORT":{"3500":{"2025":72250,"2026":85000}},"ES 250":{"2500":{"2024":24568,"2025":28903,"2026":34004}},"ES 300":{"2500":{"2023":17000}},"ES 350":{"3500":{"2022":15948,"2023":18761,"2024":22073,"2025":25968,"2026":30550}},"GS 200":{"2000":{"2020":7225}},"GS 300":{"2000":{"2021":10906}},"GS 350":{"3500":{"2021":11475,"2022":13600,"2023":15470}},"GX 460":{"4600":{"2022":36541,"2023":42989,"2024":50575,"2025":59500,"2026":70000}},"IS 300":{"2000":{"2024":15787,"2025":18572,"2026":21850}},"IS 350":{"3500":{"2024":16979,"2025":19975,"2026":23500}},"LC 500":{"5000":{"2021":62050}},"LM 300":{"2500":{"2023":31736}},"LS 500":{"3500":{"2025":50545,"2026":59465}},"LX 500 D":{"3300":{"2025":86020,"2026":101200}},"LX 570":{"5700":{"2024":72250}},"LX 600":{"3500":{"2024":96092,"2025":113050,"2026":133000}},"NX 200":{"2000":{"2023":14432,"2024":16979,"2025":19975,"2026":23500}},"NX 250":{"2400":{"2025":33885,"2026":39865},"2500":{"2025":38323,"2026":45086}},"NX 300":{"2000":{"2022":15300,"2023":17000,"2024":19550},"2500":{"2022":18700,"2023":20400,"2024":22950}},"NX 350":{"2400":{"2024":25758,"2025":30302,"2026":35650},"3500":{"2025":32300,"2026":38000}},"RC 350":{"3500":{"2018":8500}},"RX 300":{"2000":{"2024":23264,"2025":27370,"2026":32200}},"RX 350":{"3500":{"2022":19848,"2023":23337,"2024":27455,"2025":32300,"2026":38000},"2393":{"2025":28500,"2026":34000}},"RX 450":{"3500":{"2023":24343,"2024":28639,"2025":33693,"2026":39638}},"UX 200":{"2000":{"2022":13155,"2023":15476,"2024":18207,"2025":21420,"2026":25200}},"UX 250":{"2000":{"2023":22550,"2024":26528,"2025":31210,"2026":36718}},"RX 350H":{"2487":{"2026":38300,"2025":34192}},"NX 350H":{"2487":{"2025":30303}},"RX 500H":{"2393":{"2026":45000,"2025":53000}},"RX 350F SPORT F3":{"2393":{"2025":28500}},"TX 350":{"2393":{"2025":54000}},"RX 350AL1":{"2393":{"2025":33500}},"ES 300H":{"2487":{"2025":34004}},"ES 260":{"2487":{"2025":28903}},"LS 500H":{"3456":{"2025":50545}},"ТХ 500 HYBRID":{"2393":{"2025":58000}},"LM 350H":{"2487":{"2026":105000,"2025":96722}},"GX 550":{"3445":{"2026":69566}},"TX 500H":{"2393":{"2025":65000}},"ES 500L":{"2500":{"2025":63000}},"ES 500H":{"2500":{"2025":58000}},"LX 700":{"3500":{"2025":123300,"2026":145000}},"LC 500H":{"3500":{"2023":73600}},"NX 450H":{"2500":{"2023":27000}}},"LINCOLN":{"AVIATOR":{"3000":{"2024":26350}},"CONTINENTAL":{"2700":{"2023":13685}},"MKZ":{"2000":{"2022":11900}},"CAF6460B61":{"2000":{"2023":39700}},"NAUTULIS":{"2000":{"2020":26450}},"NAVIGATOR":{"3500":{"2026":129075}}},"LIVAN":{"X6 PRO":{"1500":{"2025":13810}}},"LIXIANG":{"L7":{"1500":{"2025":45600,"2026":50600}},"L9":{"1500":{"2025":53500,"2026":59400}},"L9 LIVIS":{"1500":{"2026":75000}}},"LYNK & CO":{"700.0":{"2000":{"2026":42200,"2025":38000,"2024":34200}},"300.0":{"2000":{"2026":26500}},"300":{"2000":{"2025":23900}},"600":{"1500":{"2026":32890,"2025":29601}},"800":{"1500":{"2026":43000,"2025":38700}},"900":{"2000":{"2025":49000,"2026":54450},"1600":{"2026":49500}},"09":{"2000":{"2026":45000}}},"LUXEED":{"R7":{"1500":{"2025":41600}}},"MASERATI":{"GHIBLI":{"3000":{"2020":55250}},"LEVANTE MODENA":{"3000":{"2023":105585}},"MC20 TYP M240":{"3000":{"2023":190629}},"GRANTURISMOTROFEOMY24":{"3000":{"2025":197434}},"GRECALEMODENA":{"2000":{"2025":66407}},"GRECALETROFEO":{"3000":{"2025":91609}},"MC20CIELOMY24":{"3000":{"2025":263311}}},"MAXUS":{"G50":{"1500":{"2025":16243,"2024":13800}},"V80":{"2000":{"2023":16243}},"V70":{"2000":{"2023":14800}},"G10 MAX":{"2000":{"2025":32000}}},"MAZDA":{"3.0":{"2500":{"2021":8500}},"6.0":{"2500":{"2024":11900}},"CX30":{"2500":{"2023":9212,"2024":10838,"2025":12750,"2026":15000}},"CX-5":{"2500":{"2022":8718,"2023":10256,"2024":12066,"2025":12500,"2026":15000,"2015":3000},"2000":{"2026":13000,"2025":11000,"2015":3000}},"CX-9":{"2500":{"2023":11900,"2024":14025,"2025":16130}},"CX50":{"2500":{"2025":16700}},"CX-60":{"2500":{"2025":51965}},"EZ-60":{"1500":{"2025":19000}},"MX-5":{"2000":{"2022":23800}},"EZ-6":{"1500":{"2025":21500,"2026":24700}}},"MCLAREN":{"720S":{"4000":{"2018":225000}},"650S SPIDER":{"3800":{"2016":115000}}},"MERCEDES-BENZ":{"A 200":{"1400":{"2025":21814,"2026":25664},"2000":{"2023":19376}},"A 220":{"2000":{"2023":17000}},"A 35 AMG":{"2000":{"2022":25433,"2023":29922,"2024":35202,"2025":41414,"2026":48722}},"C 180":{"1600":{"2022":14541,"2023":17626},"1500":{"2024":19525,"2025":22971,"2026":27025}},"C 200":{"1500":{"2024":20273,"2025":23851,"2026":28060}},"C 300":{"2000":{"2025":23604,"2026":27769}},"C 43 AMG":{"3000":{"2023":27636,"2024":32512,"2025":38250,"2026":45000}},"C 63 S AMG":{"4000":{"2023":55825,"2024":65677,"2025":77267,"2026":90902}},"CLS 350":{"2000":{"2023":41310,"2024":44115}},"CLS 450":{"3000":{"2023":41033,"2024":48274,"2025":56793,"2026":66815}},"CLS 53 AMG":{"3000":{"2022":46704,"2023":54947,"2024":64642,"2025":76050,"2026":89471}},"CLA 200":{"1600":{"2023":17618},"1400":{"2024":20772,"2025":24438,"2026":28750}},"CLA 250":{"2000":{"2023":22600,"2024":26588,"2025":31280,"2026":36800}},"CLA 35 AMG":{"2000":{"2023":33079,"2024":38916,"2025":45784,"2026":53864}},"CLA 45 AMG":{"2000":{"2023":38845,"2024":45699,"2025":53762,"2026":63250}},"E 200":{"2000":{"2023":24872,"2024":29261,"2025":34425,"2026":40500}},"E 200 D":{"1600":{"2023":24483,"2024":28804,"2025":33887,"2026":39867}},"E 300":{"2000":{"2025":39006,"2026":45889}},"E 350 D":{"3000":{"2023":33150}},"E 350":{"2000":{"2024":30767,"2025":36197,"2026":42585}},"E 400":{"3000":{"2020":15300}},"E 400 D":{"3000":{"2024":41650}},"E 450":{"3000":{"2023":45482,"2024":53508,"2025":62951,"2026":74060}},"E 53 AMG":{"3000":{"2023":45906,"2024":54007,"2025":63538,"2026":74750}},"E 55":{"3000":{"2023":80750}},"E 63 AMG":{"4000":{"2024":86020,"2025":101200}},"GT 43 AMG":{"3000":{"2024":86700,"2025":102000}},"GT 53 AMG":{"3000":{"2024":94687,"2025":111397}},"GT 63 AMG":{"4000":{"2024":145314,"2025":170958}},"GLA 200":{"1400":{"2025":21358,"2026":25127}},"GLA 250":{"2000":{"2025":27084,"2026":31863}},"GLA 35 AMG":{"2000":{"2024":56109,"2025":66011,"2026":77660}},"GLA 45 AMG":{"2000":{"2024":50110,"2025":58953,"2026":69356}},"GLB 200":{"1400":{"2023":24012,"2024":28250,"2025":33235,"2026":39100}},"GLB 200 D":{"2000":{"2023":26450,"2024":31118,"2025":36610,"2026":43070}},"GLB 250":{"2000":{"2023":29945,"2024":35229,"2025":41446,"2026":48760}},"GLC 200":{"2000":{"2025":30685,"2026":36100}},"GLC 220":{"2000":{"2025":33320,"2026":39200}},"GLC 300":{"2000":{"2023":20825,"2025":39174,"2026":46087}},"GLC 43 AMG":{"3000":{"2023":41828,"2024":49210,"2025":57894,"2026":68111}},"GLC 63 AMG":{"4000":{"2023":56354,"2024":66299,"2025":77999,"2026":91763}},"GLE 300 D":{"2000":{"2023":65972,"2024":75650}},"GLE 350":{"2000":{"2023":17595,"2025":27443}},"GLE 350 D":{"3000":{"2025":47662,"2026":56073}},"GLE 400 D":{"3000":{"2024":68721,"2025":80848,"2026":95115}},"GLE 450":{"3000":{"2024":57912,"2025":68132,"2026":80155}},"GLE 450 (MINIC)":{"3000":{"2025":70125,"2026":82500}},"GLE 53 AMG":{"3000":{"2024":78680,"2025":92565,"2026":108900}},"GLE 53 AMG (MINIC)":{"3000":{"2025":80155,"2026":94300}},"GLE 63 AMG":{"4000":{"2023":128389,"2024":151046,"2025":177701}},"GLS 400 D":{"3000":{"2024":112010,"2025":131776}},"GLS 500":{"4700":{"2019":38000}},"GLS 580":{"4000":{"2023":99705,"2024":117300,"2025":138000}},"GLS 600":{"4000":{"2023":170000}},"GLS 63 AMG":{"4000":{"2024":185800,"2025":218588}},"HRS2":{"2000":{"2025":59810,"2026":70365}},"MLT 580 (HYMER)":{"3000":{"2023":120785}},"R2S":{"3000":{"2024":70694}},"S 350 D":{"3000":{"2024":73015}},"S 400":{"3000":{"2024":129625,"2025":152500}},"S 400 D":{"3000":{"2024":90253,"2025":106180}},"S 450":{"3000":{"2024":73533,"2025":86509,"2026":101775}},"S 500":{"3000":{"2024":85955}},"S 560":{"4000":{"2023":91630}},"S 580":{"4000":{"2023":113841,"2024":133930,"2025":157565}},"S 680":{"6000":{"2024":154390,"2025":181635}},"SL 63 AMG":{"4000":{"2024":191023,"2025":224733}},"SPRINTER (YUCON)":{"2000":{"2024":89250,"2025":105000}},"SPRINTER 311 CDI":{"2200":{"2024":13626,"2025":16031,"2026":18860}},"SPRINTER 314 CDI":{"2200":{"2024":17000}},"SPRINTER 315 CDI":{"2000":{"2025":42739,"2026":50281}},"SPRINTER 316 CDI":{"2200":{"2023":97401}},"SPRINTER 319 CDI":{"3000":{"2023":107090}},"SPRINTER 416 CDI":{"2200":{"2025":44057,"2026":51832}},"SPRINTER 519 CDI":{"2000":{"2025":56397,"2026":66349}},"SPRINTER TOURER":{"2200":{"2024":52440}},"V 220 D V-CLASS":{"2200":{"2025":64613,"2026":76015}},"V 250 D V-CLASS":{"2000":{"2024":53113,"2025":62486,"2026":73513}},"V 250":{"2000":{"2025":47540,"2026":55930}},"V 300 AVANDGARDE":{"4000":{"2023":91035}},"V 300 D V-CLASS":{"2000":{"2024":93313,"2025":109780}},"V-CLASS":{"2000":{"2025":78072,"2026":91849}},"VITO 114":{"2200":{"2025":25415,"2026":29900}},"VITO 116":{"2200":{"2025":25415,"2026":29900}},"VITO 116 CDI":{"2000":{"2024":30404}},"VITO 119 CDI":{"2000":{"2025":27362,"2026":32190}},"VITO 121 TOURER":{"2000":{"2025":38274,"2026":45028}},"121 VITO TOURER PRO LONG":{"2000":{"2025":50237}},"AMG G63":{"4000":{"2024":144500,"2025":170000,"2026":195500}},"AMG GLE 53 4MATIC COUPE":{"3000":{"2025":83288}},"AMG GT 63":{"4000":{"2025":170958}},"AMG S 63":{"4000":{"2025":209306}},"C 300 4MATIC":{"2000":{"2025":24228}},"E 200 SEDAN":{"2000":{"2026":29022}},"E 300 4MATIC":{"2000":{"2026":40726,"2025":34620}},"E 350 4MATIC":{"2000":{"2025":36197}},"G500":{"4000":{"2024":141446},"3000":{"2025":141851}},"G63 AMG BRABUS":{"4000":{"2024":194044}},"GLB 250 4MATIC":{"2000":{"2025":41446}},"GLC 200 4MATIC":{"2000":{"2025":30685}},"GLC 200 4MATIC COUPE":{"2000":{"2025":33320}},"GLC 300 4MATIC":{"2000":{"2025":45906}},"GLC 300E 4MATIC COUPE":{"2000":{"2025":39174}},"GLE 450 4 MATIC":{"3000":{"2026":68089,"2025":63226}},"GLE 300D 4MATIC":{"2000":{"2025":65541}},"GLE 350DE 4MATIC":{"2000":{"2026":75140,"2025":65345}},"GLE 450 4 MATIC COUPE":{"3000":{"2025":61138,"2026":69223}},"GLE 53":{"3000":{"2024":93100}},"GLS 450 D 4MATIC":{"3000":{"2024":125687}},"GLS 400D4MATIC":{"2900":{"2025":68529}},"GLS 450 4 MATIC":{"3000":{"2026":86000,"2025":74745}},"GLS63":{"4000":{"2024":185800}},"MAYBACH GLS 600":{"4000":{"2024":243777}},"S 450 4MATIC":{"3000":{"2024":102995}},"S 450 4MATIC SEDAN LONG":{"3000":{"2024":97451,"2025":102298}},"S 580 4MATIC":{"4000":{"2024":177000}},"S 580 4MATIC SEDAN LONG":{"4000":{"2024":125003,"2025":143750}},"VITO":{"2000":{"2025":38274}},"CLS 400":{"3000":{"2016":12325}},"SL400":{"3000":{"2014":17000}},"E 43 AMG 4MATIC":{"3000":{"2026":80000}},"CLE53 4MATIC COUPE":{"3000":{"2025":100000}},"SL 43":{"2000":{"2026":123000}},"G800 BRABUS":{"4000":{"2026":380000}},"GLC 53 AMG COUPE":{"3000":{"2026":80000}},"CLE53 AMG":{"3000":{"2025":140000}},"G 350 D":{"3000":{"2024":143480,"2025":168800}},"G 400 D":{"3000":{"2023":115101,"2024":135413,"2025":159309}},"G 500":{"4000":{"2024":111435,"2025":131100,"2026":150000}},"GLS 600 MAYBACH":{"4000":{"2023":178689,"2024":210222,"2025":247320}},"S 580 MAYBACH":{"4000":{"2023":162519,"2024":191199,"2025":224940}},"S 680 MAYBACH":{"6000":{"2023":152465,"2024":179371,"2025":211025}},"SLS":{"6200":{"2013":150000}},"G 450 D":{"3000":{"2026":215000}}},"MG":{"5.0":{"1500":{"2024":9561,"2026":11964,"2015":3000},"2500":{"2026":14360,"2015":3000}},"ZS":{"1500":{"2025":13000}},"TROPFY":{"1500":{"2020":13000}}},"MINI":{"CLUBMAN COOPER":{"1500":{"2023":8905,"2024":10476,"2025":12325,"2026":14500}},"COOPER":{"1500":{"2023":10133,"2024":11921,"2025":14025,"2026":16500}},"COUNTRYMAN COOPER ALL4":{"1500":{"2025":26305,"2026":30947}},"COUNTRYMAN JCW ALL4":{"2000":{"2024":45019}},"COUNTRYMAN S ALL4":{"2000":{"2025":27483,"2026":32333}},"JOHN COOPER WORKS":{"2000":{"2024":11390,"2025":13410}},"COOPER S COUNTRYMAN ALL4":{"2000":{"2025":27483}}},"MITSUBISHI":{"ECLIPSE":{"1500":{"2026":13000,"2024":9392,"2025":11050,"2015":3000}},"ECLIPSE CROSS":{"1500":{"2025":11716,"2015":3000}},"MLT580":{"2000":{"2025":120779}},"MONTERO":{"3000":{"2025":20400,"2023":14705,"2024":17340,"2026":24000}},"MONTERO SPORT":{"3000":{"2025":20743,"2026":24420}},"OUTLANDER":{"2500":{"2024":21675,"2025":25500,"2026":29300},"2400":{"2024":18887,"2025":21700,"2026":25000},"2000":{"2024":13005,"2025":15000,"2026":17250,"2015":3000}},"PAJERO SPORT":{"2400":{"2025":19550}},"L200":{"2400":{"2024":18275,"2025":21500,"2026":24700},"2500":{"2025":23800,"2024":20230,"2026":27300}},"ASX":{"2000":{"2026":21141,"2023":11946,"2024":14054,"2025":16534},"1600":{"2025":13597,"2026":15636,"2015":3000}},"XPANDER":{"1500":{"2025":11695,"2024":9754,"2026":13500,"2015":3000}},"XPANDER CROSS":{"1500":{"2025":11730}},"ATTRAGE":{"1200":{"2025":8925,"2026":10500,"2015":3000}},"PAJERO":{"2500":{"2025":19550,"2026":23000},"3000":{"2022":15878,"2023":18680,"2024":21977,"2025":25855,"2026":30418},"3800":{"2023":20400}},"RVR":{"2000":{"2024":11050},"2400":{"2024":13175}},"XPANDERCROSS":{"1500":{"2015":3000}}},"MORGAN":{"PLUS SIX":{"3000":{"2024":102000,"2025":120000}}},"NISSAN":{"ALTIMA":{"2500":{"2025":12600,"2024":10668,"2015":3000},"2000":{"2025":12000,"2015":3000}},"KICKS":{"1500":{"2025":14057},"1600":{"2022":6375,"2023":7225,"2015":3000}},"PATROL SAFARI":{"4800":{"2025":35063}},"SENTRA":{"2000":{"2025":10443,"2023":6375,"2015":3000},"1800":{"2021":5780,"2015":3000}},"SYLPHY":{"1600":{"2026":16400,"2025":14400,"2015":3000}},"PATROL":{"4800":{"2026":42700,"2025":37142,"2024":30490},"4000":{"2026":35111,"2023":23970,"2024":28178,"2025":33108},"5600":{"2024":35114,"2025":41310,"2026":48600},"3500":{"2026":42190,"2025":35800},"3800":{"2026":45000}},"X-TERRA":{"2500":{"2025":14960,"2023":11305,"2024":13005,"2026":17600,"2015":3000},"2000":{"2025":14000},"4000":{"2016":5440}},"TEANA":{"2000":{"2025":19000},"2500":{"2025":22000}},"FRONTIER":{"3800":{"2024":32000}},"TERRA":{"2000":{"2025":17860}},"ARMADA":{"5600":{"2023":29920},"3500":{"2026":50000}},"ARMADA SV":{"5600":{"2024":25885}},"GT-R":{"3800":{"2023":85850}},"N7":{"0":{"2026":19000}},"Z":{"3000":{"2026":37000}},"PATHFINDER":{"3500":{"2025":29112,"2026":34250},"2000":{"2026":31000}},"ROGUE":{"2000":{"2022":6692,"2015":3000},"2500":{"2024":8925,"2015":3000}},"SUNNY":{"1600":{"2023":6205,"2015":3000}},"TITAN":{"5600":{"2024":30406}},"VERSA":{"1600":{"2022":6035,"2015":3000}},"MAXIMA":{"3500":{"2021":6864}},"X-TRAIL":{"2000":{"2021":10200},"2500":{"2023":16745,"2024":19295},"1500":{"2025":18400,"2026":21200}},"QASHQAI":{"2000":{"2024":22000,"2025":25900}},"NAVARA":{"2500":{"2024":25500}},"TOWNSTAR":{"1400":{"2025":15000}},"X-TRAIL E-POWER":{"1500":{"2025":24000,"2026":27600}}},"ORA":{"3.0":{"0":{"2025":14000}}},"PEUGEOT":{"308":{"1600":{"2023":12750}},"308.0":{"1600":{"2024":18657}},"508.0":{"1600":{"2023":18056}}},"POLARSTONE":{"ROX 01":{"1500":{"2025":41000}}},"PORSCHE":{"911.0":{"3000":{"2025":146000,"2026":168000}},"718 CAYMAN GT4":{"4000":{"2024":54145}},"718 CAYMAN GTS":{"4000":{"2024":72307}},"718 BOXSTER":{"4000":{"2025":59061,"2026":69484},"2000":{"2024":45050}},"718 CAYMAN":{"2000":{"2025":38416,"2026":45195}},"911 CARRERA 4":{"3000":{"2025":68425,"2026":80500}},"911 CARRERA 4S":{"3000":{"2024":92480,"2025":127000}},"911 CARRERA GTS":{"3000":{"2024":95178,"2025":111974}},"911 GT3":{"4000":{"2024":127500,"2025":158215}},"911 TARGA 4":{"3000":{"2025":73117,"2026":86020}},"911 TURBO":{"3800":{"2024":113292,"2025":133285}},"911 TURBO S":{"3800":{"2024":180838,"2025":212750},"3700":{"2025":180605}},"CAYENNE":{"4000":{"2025":98000,"2024":83000},"3000":{"2025":93000,"2024":79000,"2023":67000}},"CAYENNE TURBO":{"4000":{"2024":173786,"2025":204454}},"MACAN":{"2000":{"2025":47898,"2026":56350},"2900":{"2025":52235,"2026":61452}},"MACAN S":{"3000":{"2025":64260,"2026":75600}},"MACAN GTS":{"3000":{"2024":52955,"2025":58375,"2026":68673}},"PANAMERA":{"3000":{"2024":62220},"4000":{"2024":105340}},"PANAMERA 4":{"3000":{"2024":64056},"2900":{"2026":89176}},"PANAMERA GTS":{"4000":{"2024":96662,"2025":113720}},"PANAMERA TURBO":{"4000":{"2024":123944,"2025":145817}},"718 CAYMAN GT4 RS":{"4000":{"2025":129448}},"718 CAYMAN STYLEEDITION":{"2000":{"2026":54940}},"718 SPYDER RS":{"4000":{"2025":141278}},"911 CARRERA 4 COUPE":{"3000":{"2025":101284}},"911 CARRERA 4 GTS":{"3000":{"2024":162384},"3600":{"2025":164106}},"911 CARRERA S":{"3000":{"2025":113109}},"911 DAKAR":{"3000":{"2025":224999}},"911 GT3 RS":{"4000":{"2025":218569}},"911 TARGA 4S":{"3000":{"2025":123009}},"911 TURBO SCABRIOLET":{"3700":{"2025":184048}},"CAYENNE COUPE":{"3000":{"2026":88250,"2025":81683}},"CAYENNE S":{"4000":{"2025":94637}},"CAYENNE S COUPE":{"4000":{"2025":98672}},"CAYENNE TURBO GT COUPE":{"4000":{"2025":150277,"2024":149193}},"MACAN T":{"2000":{"2026":57630,"2025":48963}},"PANAMERA 4 SPORT TURISMO PLATINUMEDITION":{"2900":{"2026":92000,"2025":80462}},"PANAMERA GTS SPORT TURISMO":{"4000":{"2025":106586}},"718 BOXSTER GTS":{"4000":{"2025":57282,"2026":67390}},"PANAMERA TURBO S":{"4000":{"2025":170000}},"911 SPIRIT 70":{"3600":{"2025":500000}}},"QOROS":{"7.0":{"1800":{"2024":12000}}},"RENAULT":{"CLIO":{"1000":{"2024":6800,"2015":3000}},"KOLEOS":{"2500":{"2022":12750,"2026":23129,"2025":21882}},"SANDERO":{"1000":{"2023":6375,"2015":3000}},"QM6":{"2000":{"2025":11000,"2015":3000}},"SAMSUNG QM6":{"2000":{"2025":10175}},"SAMSUNG XM3":{"1600":{"2025":9371}},"TRAFIC PASSENGER":{"2000":{"2024":35000}},"TRAFIC PASSENGER (ГРУППА 8704)":{"2000":{"2024":40000}},"SAMSUNGQM6":{"2000":{"2015":3000}},"SAMSUNGXM3":{"1600":{"2015":3000}}},"ROEWE":{"I5":{"1500":{"2025":11200}},"M7":{"1500":{"2025":16000}},"D7":{"1500":{"2025":20000}}},"ROLLS-ROYCE":{"CULLINAN":{"6800":{"2022":190995,"2023":218960}},"CULLINAN BLACK BADGE":{"6800":{"2022":269620,"2023":309868}},"DAWN":{"6600":{"2022":232050,"2023":266050}},"GHOST":{"6800":{"2023":232747}},"GHOST SILVER BADGE":{"6600":{"2023":393067}},"GHOST BLACK BADGE":{"6800":{"2023":249262}},"GHOST EWB":{"6800":{"2023":280445}},"PHANTOM":{"6800":{"2023":321716}},"WRAITH":{"6600":{"2022":222275,"2023":255616}}},"ROX":{"ADAMAS":{"1500":{"2026":50000}}},"SAMSUNG":{"QM6":{"2000":{"2024":9350,"2015":3000}},"SM6":{"2000":{"2023":7650}},"XM3":{"1400":{"2023":4590,"2015":3000},"1600":{"2023":6758,"2015":3000}}},"SERES":{"AITO, M7":{"1500":{"2024":36840}},"AITO, M5":{"1500":{"2024":27530}},"LANDIAN E5":{"1500":{"2024":19000}}},"SKODA":{"FABIA":{"1000":{"2025":7650,"2026":9000,"2015":3000}},"KAMIQ":{"1000":{"2025":7650,"2026":9000,"2015":3000}},"KODIAQ":{"2000":{"2025":23460,"2026":27600}},"OCTAVIA":{"1000":{"2025":9350,"2026":11000,"2015":3000}},"SCALA":{"1000":{"2025":7650,"2026":9000,"2015":3000}},"SUPERB":{"1500":{"2023":19301},"2000":{"2026":23500,"2025":20100}}},"SMART":{"SMART 1":{"0":{"2026":37000}},"SMART 3":{"0":{"2026":50000}},"SMART 5":{"0":{"2026":55000}}},"SSANGYONG":{"ACTYON":{"1500":{"2024":28500}},"KORANDO":{"1500":{"2024":8500,"2015":3000},"1600":{"2024":8755,"2015":3000}},"TIVOLI":{"1500":{"2024":8500,"2025":10005,"2015":3000}},"TORRES":{"1500":{"2025":14705,"2026":17300,"2024":12495}},"CHAIRMAN":{"3200":{"2011":8000}},"REXTON":{"2200":{"2024":10200,"2015":3000}}},"SUBARU":{"ASCENT":{"2400":{"2024":13685,"2025":16100}},"BRZ":{"2000":{"2021":17339}},"CROSSTREK":{"2000":{"2024":11484,"2025":13510},"2500":{"2026":15500,"2025":14600}},"FORESTER":{"2500":{"2025":24900,"2026":28600},"2000":{"2025":22000,"2026":25300}},"IMPREZA":{"2000":{"2023":8925,"2024":10625,"2025":12550,"2015":3000},"1600":{"2025":14450,"2026":17000,"2015":3000}},"LEGACY":{"2500":{"2023":11900,"2024":13600,"2025":16000}},"OUTBACK":{"2500":{"2022":11722,"2023":13790,"2024":16225,"2025":19088,"2026":22456},"2400":{"2025":19088}},"WRX":{"2000":{"2021":13260},"2500":{"2025":24540}},"XV":{"2000":{"2025":13938,"2026":16398,"2015":3000}}},"SUZUKI":{"BALENO":{"1500":{"2025":10370,"2026":12200,"2015":3000}},"CIAZ":{"1500":{"2025":9350,"2026":11000,"2015":3000}},"DZIRE":{"1200":{"2024":7650,"2015":3000}},"ERTIGA":{"1500":{"2024":8724,"2025":10264,"2026":12075,"2015":3000}},"JIMNY":{"1500":{"2024":10137,"2025":11926,"2026":14030,"2015":3000}},"SWIFT":{"1200":{"2025":5950,"2026":7000,"2015":3000},"1300":{"2025":6375,"2026":7500,"2015":3000}},"VITARA":{"1400":{"2024":13175},"1600":{"2025":15640,"2026":18400}},"GRANDVITARA":{"1500":{"2025":17274}},"GRANDVITARA HYBRID":{"1500":{"2025":15640}},"JIMNY SIERRA":{"1500":{"2025":12150,"2015":3000}},"BALENO GLXHWBA3S":{"1500":{"2025":10370,"2015":3000}},"FRONX":{"1500":{"2025":14150,"2026":16150,"2015":3000}}},"TANK":{"300":{"2000":{"2026":32000},"3000":{"2026":34500}},"500.0":{"3000":{"2025":39100,"2026":46000},"2000":{"2026":42000,"2025":35700}},"700.0":{"3000":{"2026":74065,"2025":62955}},"400.0":{"2000":{"2024":37600}}},"TOYOTA":{"AYGO":{"1000":{"2025":17204,"2026":20240}},"C-HR":{"2000":{"2023":11653,"2024":13709,"2025":16129,"2026":18975},"1800":{"2025":15500}},"CAMRY":{"2500":{"2026":32000,"2025":27000,"2024":24000},"3500":{"2025":32200,"2026":37000},"2000":{"2026":27830,"2025":23575}},"COROLLA":{"1200":{"2024":8800,"2015":3000},"1600":{"2024":9567,"2025":11241,"2026":13225,"2015":3000},"1800":{"2022":7503,"2023":8949,"2024":10412,"2025":12329,"2026":14505,"2015":3000},"2000":{"2022":8384,"2023":9775,"2024":11217,"2025":13196,"2026":15525},"1500":{"2025":12941}},"FJ CRUISER":{"4000":{"2024":25342,"2025":29814,"2026":35075}},"FORTUNER":{"2700":{"2022":14407,"2023":16950,"2024":20400,"2025":23460,"2026":27600},"4000":{"2024":22018,"2025":25904,"2026":30475},"2694":{"2026":27600,"2025":23460}},"GRANVIA":{"2800":{"2022":34212},"3500":{"2024":38250,"2025":45000,"2026":53000},"2500":{"2026":51600}},"HIACE":{"2700":{"2022":11736},"2800":{"2022":14711},"3500":{"2026":50000}},"HIGHLANDER":{"2400":{"2025":23949,"2026":28175},"2500":{"2024":20772,"2025":24438,"2026":28750},"2700":{"2021":14662,"2022":17106},"3500":{"2022":17409,"2023":20482,"2024":24095,"2025":28348,"2026":33350},"2393":{"2025":23949,"2026":28175},"2487":{"2025":24438,"2026":28750},"2000":{"2026":25875}},"INNOVA":{"2700":{"2024":19550},"2000":{"2025":24100}},"LAND CRUISER PRADO 150":{"2700":{"2023":20834,"2024":24511,"2025":28836},"2800":{"2024":25259,"2025":29716},"4000":{"2023":32753,"2024":38533}},"LAND CRUISER PRADO 250":{"2700":{"2026":33925},"2800":{"2026":34960},"2400":{"2025":44400,"2026":53334}},"LAND CRUISER 200":{"4000":{"2023":32258,"2024":36168},"4500":{"2022":27077},"4600":{"2023":39100,"2024":45942},"5700":{"2024":51808}},"LAND CRUISER 300":{"4000":{"2025":98600,"2024":83800,"2026":113000},"3500":{"2025":93000,"2024":79000,"2026":107000},"3300":{"2025":88000,"2024":79000,"2026":101200}},"LAND CRUISER 71":{"4000":{"2024":20528}},"LAND CRUISER 76":{"4000":{"2024":20772,"2025":24438,"2026":28750},"4500":{"2024":27370},"2800":{"2025":23000}},"LAND CRUISER 78":{"2800":{"2025":23600},"4000":{"2024":22482},"4500":{"2024":25415}},"PRIUS":{"1800":{"2021":7820,"2022":8309,"2023":10752,"2024":12219},"2000":{"2025":16500}},"PREVIA":{"2400":{"2019":9775,"2020":12708}},"RAV-4":{"2000":{"2025":24500,"2026":28000},"2500":{"2025":27500,"2026":31650}},"RUSH":{"1500":{"2023":9887,"2024":11632,"2025":13685,"2026":16100,"2015":3000}},"SIENNA":{"2500":{"2023":15537,"2024":18279,"2025":21505,"2026":25300},"3500":{"2022":14290,"2023":16812,"2024":19779,"2025":23269,"2026":27376},"2487":{"2025":21505,"2026":25300}},"SEQUOIA":{"3500":{"2025":68000,"2026":80000}},"SUPRA":{"3000":{"2024":31280}},"TUNDRA":{"3500":{"2024":65000,"2025":75000,"2026":86000},"5700":{"2025":82000,"2026":92000}},"TACOMA":{"3500":{"2025":26392,"2026":31050},"2400":{"2025":22000}},"VENZA":{"2500":{"2024":16618,"2025":20100},"2000":{"2025":18275}},"WIGO":{"1200":{"2025":6842,"2026":8050,"2015":3000}},"YARIS":{"1400":{"2023":9140,"2025":11241,"2026":13225,"2015":3000},"1500":{"2024":9555,"2025":12776,"2015":3000}},"4 RUNNER":{"4000":{"2025":31077,"2022":18910,"2023":22247,"2024":26175,"2026":36225},"2700":{"2019":11730},"2400":{"2026":52190}},"ALLION":{"2000":{"2025":14550,"2015":3000}},"COROLLA CROSS":{"2000":{"2025":15842},"1800":{"2025":12329,"2015":3000}},"COROLLA HYBRID":{"1800":{"2025":14766}},"COROLLA RUIFANG":{"2000":{"2026":18300}},"CROWN":{"2400":{"2025":20100},"2500":{"2025":20000}},"CROWN HYBRID":{"2500":{"2025":20000}},"CROWN KLUGER":{"2000":{"2025":30000},"2500":{"2026":38850}},"FRONTLANDER":{"2000":{"2025":16905}},"FRONTLANDER HYBRID":{"2000":{"2026":19370}},"GRAND HIGHLANDER":{"2400":{"2025":35156,"2026":41360}},"GRAND HIGHLANDER HYBRID":{"2500":{"2025":51341},"2400":{"2026":55000}},"GTM":{"2500":{"2026":28750}},"HILUX":{"4000":{"2025":25415,"2026":29900},"2800":{"2025":32000},"2700":{"2025":28000},"2400":{"2025":28000,"2026":33000}},"LAND CRUISER":{"4200":{"2025":31100},"3300":{"2025":68425},"4000":{"2025":42358},"3400":{"2025":85043}},"LAND CRUISER 150":{"2800":{"2025":30000}},"RUMION":{"1500":{"2025":14500}},"SIENNA HYBRID":{"2500":{"2025":22453}},"TV7207HEV6P":{"2000":{"2026":15525}},"URBAN CRUISER":{"1500":{"2025":17240}},"VELOZ":{"1500":{"2025":17875}},"WILDLANDER":{"2000":{"2025":23433}},"C-HRMAXH20L":{"2000":{"2025":25100}},"LAND CRUISER 79":{"4000":{"2025":35000}},"GR86":{"2400":{"2023":19000}},"COASTER":{"2500":{"2025":46000}},"PROACE":{"1500":{"2025":32000}},"HIGHLANDER HYBRID":{"2500":{"2025":26000}},"AVALON":{"2500":{"2022":10805,"2023":12712,"2024":14956,"2025":17595,"2026":25500},"3500":{"2023":16244,"2024":19110,"2025":22482,"2026":26450}},"AVANZA":{"1600":{"2023":9775}},"ALPHARD":{"2500":{"2025":78000,"2024":67000},"3500":{"2025":83000}}},"VOLKSWAGEN":{"ARTEON":{"2000":{"2023":21122}},"ATLAS":{"2000":{"2024":14025},"3600":{"2025":20952,"2026":24650}},"CADDY":{"1500":{"2024":37868}},"GOLF":{"1000":{"2025":15300,"2026":18000},"1500":{"2024":14683},"2000":{"2024":16505,"2025":20984,"2026":22845},"1984":{"2025":19418}},"GOLF GTI":{"2000":{"2025":39378,"2026":46327}},"CALIFORNIA T5":{"2000":{"2025":46693,"2026":54933}},"CALIFORNIA T6":{"2000":{"2025":59481,"2026":69978}},"CALIFORNIA T7":{"1500":{"2026":72000}},"CARAVELLE T6":{"2000":{"2025":69141,"2026":81342}},"JETTA":{"1400":{"2022":6724,"2023":7910,"2024":9306,"2025":10948,"2026":12880,"2015":3000},"1500":{"2025":11200,"2015":3000},"2000":{"2025":13000,"2015":3000}},"MULTIVAN":{"2000":{"2024":40923,"2025":48145,"2026":56641}},"POLO":{"1600":{"2023":8500,"2015":3000}},"PASSAT":{"1400":{"2023":8500,"2015":3000},"1800":{"2020":5100,"2015":3000},"2000":{"2022":10566,"2023":12430,"2024":14705,"2025":17204,"2026":20240}},"ST":{"2000":{"2025":38265,"2026":45018}},"KOMBI T6":{"2000":{"2025":46578,"2026":54798}},"TIGUAN":{"2000":{"2022":13511,"2023":15895,"2024":18700,"2025":22055},"1500":{"2025":22100,"2026":26000}},"TOUAREG":{"3000":{"2025":38930,"2026":45800}},"TRANSPORTER T6":{"2000":{"2025":27532,"2026":32391}},"CRAFTER":{"2000":{"2025":79325}},"LAVIDA":{"1500":{"2026":13200,"2015":3000}},"TERAMONT":{"2000":{"2025":30600}},"TALAGON":{"2000":{"2024":27000}},"TACQUA":{"1200":{"2024":20500}},"LAVANDO L":{"2000":{"2025":25000}},"THARU":{"1500":{"2025":21000}},"TAYRON":{"1500":{"2026":37000}},"GOLF R":{"2000":{"2015":3000}}},"VOLVO":{"S60":{"2000":{"2023":13962,"2024":16426,"2025":19325,"2026":22735}},"S90":{"2000":{"2024":19858,"2025":23362,"2026":27485}},"V60 CROSS COUNTRY":{"2000":{"2023":17868,"2024":21021,"2025":24731,"2026":29095}},"XC40":{"1500":{"2023":14125,"2024":16618,"2025":19550,"2026":23000},"2000":{"2024":19941,"2025":23460}},"XC60":{"2000":{"2023":19712,"2024":22766,"2025":26784,"2026":31510}},"XC90":{"2000":{"2023":26837,"2024":31573,"2025":37145,"2026":43700}}},"VOYAH":{"DREAM":{"1500":{"2025":49600,"2026":57000}},"FREE":{"1500":{"2024":27200,"2025":32000,"2026":36800}},"CHASING LIGHT":{"1500":{"2024":28000}},"PASSION":{"1500":{"2024":36505}},"DREAMER":{"1500":{"2025":49600}},"TAISHAN":{"1500":{"2026":70000,"2025":59500}}},"WEY":{"LANSHAN":{"1500":{"2024":25287,"2026":35000}}},"WULING":{"BINGO":{"1500":{"2025":7500}},"BRAND":{"1500":{"2025":14000,"2015":3000}},"GUILTY LIGHT V":{"1500":{"2025":11000}},"HONGGUANG":{"1500":{"2025":12500,"2015":3000}},"JIACHEN":{"1500":{"2025":13800}},"LIGHT LZW6389EQU":{"1500":{"2025":10800,"2015":3000}},"LZW6410EQU":{"1500":{"2025":6600,"2015":3000}},"LZW648IEBUA":{"1500":{"2025":10300,"2015":3000}},"STARLIGHT":{"1500":{"2026":13407}},"VICTORY":{"1500":{"2025":13000,"2015":3000}},"XINGCHI":{"1500":{"2025":10300}},"XINGCHI LZW6449GBU":{"1500":{"2025":11000}},"RONGGUANG":{"1500":{"2015":3000}}}};
+const MRP=R.kz.mrp.value;
+const UTIL_BASE=R.kz.utilBaseMrp.value*MRP;
+const UTIL_K=R.kz.utilK.table;
+function utilK(cc,rt){const t=UTIL_K[rt];return cc<=1000?t[1000]:cc<=2000?t[2000]:cc<=3000?t[3000]:t[9999];}
+/* Электро (кроме гибридных): коэффициент 0 при прямом ввозе, 60 при ввозе из РФ/РБ.
+   Гибриды под нулевой коэффициент НЕ подпадают — считаются по объёму двигателя. */
+function utilKEv(rt){return R.kz.utilKEv[rt];}
+function regFeeEv(ageY){const t=R.kz.regFeeEv.table;for(const q of t)if(ageY<q[0])return q[1]*MRP;return t[t.length-1][1]*MRP;}
+/* СПОРНАЯ СТУПЕНЬ — О-37. Обе версии лежат в справочнике ставок, переключатель R.kz.regFee.version */
+/* Возраст от ДАТЫ ПРОИЗВОДСТВА — единое правило для всех стран и всех статей (владелец, 03.09.2026) */
+function regFee(ageY){const G=R.kz.regFee;const t=G[G.version]||G.st615;for(const q of t)if(ageY<q[0])return q[1]*MRP;return t[t.length-1][1]*MRP;}
+const SBOR=R.kz.sborMrp.value*MRP;
+const LUX_MRP=R.kz.luxMrp.value;
+const DUTY_35=R.eaeu.duty35;
+const DUTY_5 =R.eaeu.duty5;
+const DUTY_LT3=R.eaeu.dutyLt3;
+function dutyRate(cc,band){const t=band==="mid"?DUTY_35:band==="old"?DUTY_5:null;if(!t)return null;for(const p of t)if(cc<=p[0])return p[1];}
+function ettMin(cc,old7){const E=R.eaeu.ett;if(cc>=R.eaeu.ett.ccMin&&cc<R.eaeu.ett.ccMid)return old7?E.cc1500_1800.old7:E.cc1500_1800.neu;if(cc>=R.eaeu.ett.ccMid&&cc<=R.eaeu.ett.ccMax)return old7?E.cc1800_3000.old7:E.cc1800_3000.neu;return null;}
+const TR={"А":"a","Б":"b","В":"v","Г":"g","Д":"d","Е":"e","Ж":"zh","З":"z","И":"i","Й":"y","К":"k","Л":"l","М":"m","Н":"n","О":"o","П":"p","Р":"r","С":"s","Т":"t","У":"u","Ф":"f","Х":"h","Ц":"ts","Ч":"ch","Ш":"sh","Щ":"sch","Ы":"y","Э":"e","Ю":"yu","Я":"ya"};
+function kslug(s){return String(s||"").toUpperCase().split("").map(function(c){return TR[c]!==undefined?TR[c]:c;}).join("").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");}
+const PFX="kz-";const ROOT=document.getElementById("sec-kz");const $=id=>document.getElementById(PFX+id);
+const state={src:"grid",st:"personal",rt:"direct",mc:"yes",im:"no",cur:"usd",fuel:"ice"};
+const nf=n=>Math.round(n).toLocaleString("ru-RU");
+const tg_=n=>nf(n)+" ₸";
+function todayISO(){return new Date().toISOString().slice(0,10);}
+
+/* ── КУРС: ТОЛЬКО НАЦБАНК РК (правило владельца: каждая страна — свой ЦБ) ── */
+const FB=R.kz.fx;
+let RATE_SRC="";
+function nowStamp(){var d=new Date(),p=function(n){return ("0"+n).slice(-2);};
+  return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear()+", "+p(d.getHours())+":"+p(d.getMinutes());}
+function todayDMY(){var d=new Date(),p=function(n){return ("0"+n).slice(-2);};
+  return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear();}
+
+function ddmmyyyy(iso){const p=iso.split("-");return p[2]+"."+p[1]+"."+p[0];}
+/* Казахстан: ручной ввод курса запрещён решением владельца 03.09.2026.
+   Курс принимается ТОЛЬКО от НБ РК — с канала на дату либо с общего потока.
+   Поля остаются заблокированными при любом исходе загрузки. */
+function setEditable(){["fx","fxe","fxk"].forEach(function(id){$(id).readOnly=true;});}
+function parseKzRss(txt){
+  const doc=new DOMParser().parseFromString(txt,"text/xml");
+  const items=doc.getElementsByTagName("item"),out={};
+  for(let i=0;i<items.length;i++){
+    const t=(items[i].getElementsByTagName("title")[0]||{}).textContent;
+    const d=(items[i].getElementsByTagName("description")[0]||{}).textContent;
+    const q=(items[i].getElementsByTagName("quant")[0]||{}).textContent;
+    if(!t||!d)continue;
+    out[t.trim()]={v:parseFloat(String(d).replace(",",".")),q:parseFloat(q||"1")||1};
+  }
+  if(!out.USD||!out.EUR)throw new Error("нет валюты");
+  return out;
+}
+function loadRates(){
+  const b=$("rateStatus");b.textContent="загрузка…";b.className="rbadge";
+  const FX=window.ENCAR_FX&&window.ENCAR_FX.kz;
+  if(FX){$("fx").value=FX.usd;$("fxe").value=FX.eur;$("fxk").value=FX.krw100;
+    const fxD=window.ENCAR_FX.date||"";
+    if(fxD===todayDMY()){RATE_SRC="fx";setEditable(false);
+      b.textContent="Курс · "+fxD;b.className="rbadge ok";}
+    else{RATE_SRC="fx-stale";setEditable(true);
+      b.textContent="⚠ курс НБ РК от "+fxD+", не на сегодня";b.className="rbadge warn";}
+    calc();}
+  const iso=todayISO(); /* курс — строго на момент запроса расчёта */
+  /* Два канала НБ РК: сначала выдача на дату, при отказе — общий поток курсов.
+     Оба принадлежат нацбанку, кросс-курсы не используются. */
+  const kzMain=function(){return fetch("https://nationalbank.kz/rss/get_rates.cfm?fdate="+ddmmyyyy(iso))
+    .then(function(r){if(!r.ok)throw 0;return r.text();});};
+  const kzAlt =function(){return fetch("https://nationalbank.kz/rss/rates_all.xml")
+    .then(function(r){if(!r.ok)throw 0;return r.text();});};
+  return kzMain().catch(kzAlt)
+    .then(function(t){const o=parseKzRss(t);
+      $("fx").value=(o.USD.v/o.USD.q).toFixed(4);
+      $("fxe").value=(o.EUR.v/o.EUR.q).toFixed(4);
+      if(o.KRW)$("fxk").value=(o.KRW.v/o.KRW.q*100).toFixed(4);
+      RATE_SRC="nbk";setEditable(false);
+      b.textContent="Курс · "+nowStamp();b.className="rbadge ok";calc();})
+    .catch(function(){if(RATE_SRC==="fx"||RATE_SRC==="fx-stale")return;
+      $("fx").value=FB.usd;$("fxe").value=FB.eur;$("fxk").value=FB.krw100;
+      RATE_SRC="fallback";setEditable(true);
+      b.textContent="🔴 курс НБ РК не получен";b.className="rbadge warn";calc();});
+}
+
+function buildKzLinks(){const br=kslug($("brand").value),mo=kslug($("model").value),y=+$("mYear").value||0;
+  $("lbKolesa").href="https://kolesa.kz/cars/"+br+"/"+mo+"/?year[from]="+y+"&year[to]="+y;
+  $("lbMycars").href="https://mycars.kz/";$("lbAster").href="https://aster.kz/";}
+function fillBrands(){const b=$("brand");b.innerHTML="";Object.keys(GRID).sort().forEach(function(k){const o=document.createElement("option");o.value=k;o.textContent=k;b.appendChild(o);});fillModels();}
+function fillModels(){const br=$("brand").value,m=$("model");m.innerHTML="";Object.keys(GRID[br]||{}).sort().forEach(function(k){const o=document.createElement("option");o.value=k;o.textContent=k;m.appendChild(o);});fillVols();}
+function fillVols(){const br=$("brand").value,mo=$("model").value,v=$("volSel");v.innerHTML="";
+  Object.keys((GRID[br]||{})[mo]||{}).map(Number).sort(function(a,b){return a-b;}).forEach(function(k){const o=document.createElement("option");o.value=k;o.textContent=(k/1000).toFixed(1)+" л";v.appendChild(o);});
+  if(v.value)$("cc").value=v.value;buildKzLinks();calc();}
+function gridPrice(){const br=$("brand").value,mo=$("model").value,vol=+$("volSel").value,year=+$("mYear").value||0;
+  const m=(GRID[br]||{})[mo]&&GRID[br][mo][vol];if(!m)return null;
+  const years=Object.keys(m).map(Number).sort(function(a,b){return a-b;});
+  if(m[year]!=null)return{price:m[year],note:"из сетки, "+year,exact:true};
+  const max=years[years.length-1];
+  if(year>max)return{price:m[max],note:"потолок сетки "+max,exact:false};
+  const base=years.find(function(y){return y>=year;});
+  if(base==null)return{price:m[max],note:"потолок сетки "+max,exact:false};
+  const steps=base-year,price=Math.round(m[base]*Math.pow(0.85,steps));
+  return{price:price,note:"ОЦЕНКА: от "+base+" ($"+nf(m[base])+") −15% × "+steps,exact:false};}
+function madeMoment(){const y=+$("mYear").value||0;if(state.mc==="yes"){const m=+$("mMonth").value||7;return new Date(y,m-1,15);}return new Date(y,6,1);}
+function declDate(){const v=$("rdate").value;return v?new Date(v+"T00:00:00"):new Date();}
+function ageYears(){return (declDate()-madeMoment())/(365.2425*24*3600*1000);}
+function bandOf(a){return a<3?"new":a<=5?"mid":"old";}
+function bandName(b){return b==="new"?"до 3 лет":b==="mid"?"3–5 лет":"старше 5 лет";}
+function segWire(sel,key,fn){$(sel).addEventListener("click",function(e){const b=e.target.closest("button");if(!b)return;
+  Array.prototype.forEach.call(e.currentTarget.children,function(x){x.classList.remove("on");});b.classList.add("on");
+  state[key]=b.dataset[Object.keys(b.dataset)[0]];if(fn)fn();calc();});}
+segWire("srcSel","src",function(){const g=state.src==="grid";$("gridBox").style.display=g?"block":"none";$("manualBox").style.display=state.src==="manual"?"block":"none";});
+segWire("stSel","st",function(){ROOT.querySelectorAll(".pers-only").forEach(function(e){e.classList.toggle("hidden",state.st!=="personal");});});
+segWire("rtSel","rt");segWire("mcSel","mc");segWire("imSel","im");
+segWire("curSel","cur",function(){ROOT.querySelectorAll(".cur-usd").forEach(function(e){e.classList.toggle("hidden",state.cur!=="usd");});ROOT.querySelectorAll(".cur-krw").forEach(function(e){e.classList.toggle("hidden",state.cur!=="krw");});});
+$("brand").addEventListener("change",fillModels);
+$("model").addEventListener("change",fillVols);
+$("volSel").addEventListener("change",function(){$("cc").value=this.value;calc();});
+["cc","mYear","manualUsd","buy","buyKrw","fx","fxe","fxk","fracht","broker","sbkts","srts","retail","fxAdd"].forEach(function(id){$(id).addEventListener("input",calc);});
+$("mMonth").addEventListener("change",calc);
+segWire("fuelSel","fuel");
+$("mYear").addEventListener("input",buildKzLinks);
+/* курс не зависит от даты декларации: берётся на момент запроса расчёта */
+$("logClass").addEventListener("change",function(){$("fracht").value=this.value;calc();});
+function calc(){
+  const fx=+$("fx").value||0, fxe=+$("fxe").value||0, fxk=+$("fxk").value||0;
+  const cc=+$("cc").value||0, fracht=+$("fracht").value||0;
+  const mk=1+((+$("fxAdd").value||0)/100);
+  const buy0 = state.cur==="krw" ? (+$("buyKrw").value||0)*fxk/100 : (+$("buy").value||0)*fx;
+  const buy = fx>0 ? buy0/fx : 0;
+  const broker=+$("broker").value||0, sbkts=+$("sbkts").value||0, srts=+$("srts").value||0, retail=+$("retail").value||0;
+  const a=ageYears(), band=bandOf(a);
+  const requal = state.st==="personal" && state.im==="yes";   /* О-31: переквалификация */
+  const pers = state.st==="personal" && !requal;
+  let baseUSD=0, gnote="", estimated=false;
+  if(state.src==="grid"){const g=gridPrice();
+    if(g){baseUSD=g.price;gnote=g.note;estimated=!g.exact;}else{gnote="нет в сетке — переключи на «Вручную»";}
+    $("gridNote").textContent="Таможенная база: $"+nf(baseUSD)+" ("+gnote+")";}
+  else if(state.src==="manual"){baseUSD=+$("manualUsd").value||0;gnote="ручной ввод";}
+  else{baseUSD=buy+fracht;gnote="инвойс + фрахт, курс НБ РК";}
+  const TS=baseUSD*fx;
+  let duty=0,dmode="",excise=0,exMode="",vat=0;
+  if(pers){
+    if(band==="new"){const cvEur=fxe>0?TS/fxe:0;const br=DUTY_LT3.find(function(b){return cvEur<=b[0];});
+      const pp=TS*br[1],mp=cc*br[2]*fxe;duty=Math.max(pp,mp);dmode=(pp>=mp?(br[1]*100)+"% ст-ти":"мин "+br[2]+" €/см³");}
+    else{const rt=dutyRate(cc,band);duty=cc*rt*fxe;dmode=rt+" €/см³";}
+  }else{
+    const old7=a>7, mn=ettMin(cc,old7);
+    if(old7){duty=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)*cc*fxe;dmode=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)+" €/см³ (>7 лет)";}
+    else{const pp=TS*R.eaeu.ett.adValorem,mp=(mn!==null?mn:R.eaeu.ett.fallbackMin)*cc*fxe;duty=Math.max(pp,mp);
+      dmode=(pp>=mp?(R.eaeu.ett.adValorem*100)+"% ТС":"мин "+(mn!==null?mn:R.eaeu.ett.fallbackMin)+" €/см³")+" (б/у до 7 лет)";}
+    if(cc>R.kz.exciseVolume.ccOver){excise=cc*R.kz.exciseVolume.rate;exMode=R.kz.exciseVolume.rate+" ₸/см³ (V>3,0 л)";}
+  }
+  /* Акциз на роскошь — национальный налог сверх таможенных платежей, начисляется
+     и физлицу, и юрлицу (решение владельца 03.09.2026, О-38). */
+  if(R.kz.luxRate.appliesToIndividual!==false && TS>=LUX_MRP*MRP){
+    excise+=TS*R.kz.luxRate.value;
+    exMode=(exMode?exMode+" + ":"")+(R.kz.luxRate.value*100)+"% роскошь";
+  }
+  /* НДС только юрлицу; база — ТС + пошлина + акцизы, как было до правки 03.09.2026 */
+  if(!pers) vat=(TS+duty+excise)*R.kz.vat.value;
+  const isEv=state.fuel==="ev";
+  const kU=isEv?utilKEv(state.rt):utilK(cc,state.rt), util=UTIL_BASE*kU, reg=isEv?regFeeEv(a):regFee(a);
+  const gov=duty+excise+vat+SBOR+util+reg;
+  const fr0=fracht*fx;
+  const buyKZT=buy0*mk, frKZT=fr0*mk, fxPad=(buyKZT-buy0)+(frKZT-fr0);
+  const full=buyKZT+frKZT+gov+broker+sbkts+srts;
+  const profit=retail>0?retail-full:null, pct=(profit!==null&&full)?profit/full*100:null;
+  $("breakdown").innerHTML=
+    '<div class="line"><span class="k">Закуп (encar) '+(state.cur==="krw"?"₩"+nf(+$("buyKrw").value||0):"$"+nf(buy))+'</span><span class="v">'+tg_(buy0)+'</span></div>'+
+    '<div class="line"><span class="k">Фрахт до КЗ $'+nf(fracht)+'</span><span class="v">'+tg_(fr0)+'</span></div>'+
+    '<div class="line total"><span class="k">Таможенная база ($'+nf(baseUSD)+', курс НБ РК)</span><span class="v">'+tg_(TS)+'</span></div>'+
+    
+    '<div class="line"><span class="k">Платежи государству</span><span class="v">'+tg_(gov)+'</span></div>'+
+    '<div class="line sub2"><span class="k">'+(pers?"единая ставка ЕАЭС · ":"пошлина ЕТТ · ")+dmode+'</span><span class="v">'+tg_(duty)+'</span></div>'+
+    (excise?'<div class="line sub2"><span class="k">акциз · '+exMode+'</span><span class="v">'+tg_(excise)+'</span></div>':'')+
+    (vat?'<div class="line sub2"><span class="k">НДС 16%</span><span class="v">'+tg_(vat)+'</span></div>':'')+
+    '<div class="line sub2"><span class="k">таможенный сбор · 6 МРП</span><span class="v">'+tg_(SBOR)+'</span></div>'+
+    '<div class="line sub2"><span class="k">утильсбор · K='+kU+' ('+(state.rt==="direct"?"прямой":"через РФ/РБ")+')</span><span class="v">'+tg_(util)+'</span></div>'+
+    '<div class="line sub2"><span class="k">регистрационный сбор · '+(reg/MRP)+' МРП</span><span class="v">'+tg_(reg)+'</span></div>'+
+    '<div class="line"><span class="k">Брокер + СБКТС</span><span class="v">'+tg_(broker+sbkts)+'</span></div>'+
+    '<div class="line"><span class="k">СРТС + номера</span><span class="v">'+tg_(srts)+'</span></div>'+
+    '<div class="line grand"><span class="k">Полная себестоимость</span><span class="v">'+tg_(full)+'</span></div>'+
+    '<div class="line"><span class="k">Розница КЗ</span><span class="v">'+(retail>0?tg_(retail):"—")+'</span></div>'+
+    '<div class="line total"><span class="k">Маржа</span><span class="v '+(profit!==null?(profit>=0?"pos":"neg"):"")+'">'+(profit!==null?tg_(profit)+" · "+pct.toFixed(1)+"%":"нужна розница")+'</span></div>';
+  let cls="x",vt="—";if(pct!==null){cls=pct>=15?"g":pct>=8?"a":"r";vt=pct>=15?"🟢 ВЕЗТИ":pct>=8?"🟡 ТОНКО":"🔴 НЕ ВЫГОДНО";}
+  $("verdict").className="verdict "+cls;
+  $("verdict").innerHTML='<div class="vt">'+vt+(pct!==null?" · "+pct.toFixed(1)+"%":"")+'</div><div class="vm">'+
+    (pers?"физлицо, личное — единая ставка ЕАЭС, НДС не начисляется":(requal?"ПЕРЕКВАЛИФИКАЦИЯ: 2-е авто за 12 мес — коммерческий контур":"юрлицо — ЕТТ + акциз + НДС 16%"))+" · возраст "+a.toFixed(2)+" г. ("+bandName(band)+")</div>";
+  let f="";
+  if(fxPad)f+='<div class="flag amber">ℹ К закупу и фрахту добавлено +'+$("fxAdd").value+'% к курсу НБ РК ('+tg_(fxPad)+'). Таможенная база и платежи посчитаны по официальному курсу.</div>';
+  if(RATE_SRC==="fx-stale")f+='<div class="flag">🔴 Курс НБ РК на момент расчёта не получен — показан курс от '+((window.ENCAR_FX&&window.ENCAR_FX.date)||"")+'. Ручной ввод по Казахстану запрещён: курс принимается только от Нацбанка. Нажмите на подпись курса, чтобы запросить заново. Такой расчёт клиенту не выдаётся.</div>';
+  if(RATE_SRC==="fallback")f+='<div class="flag">🔴 Курс НБ РК не получен ни с одного канала — подставлен сохранённый на '+FB.date+'. Ручной ввод по Казахстану запрещён. Нажмите на подпись курса, чтобы запросить заново; расчёт клиенту не выдаётся.</div>';
+  if(state.mc==="no"){const y=+$("mYear").value||0,mm=+$("mMonth").value||7;
+    const a2=(declDate()-new Date(y,mm-1,15))/(365.2425*24*3600*1000),b2=bandOf(a2);
+    f+='<div class="flag amber">⚠ Месяц выпуска не подтверждён → момент выпуска принят <b>01.07.'+y+'</b> (ЕЭК № 74, п. 5). Категория: '+bandName(band)+(b2!==band?'. При подтверждении месяца станет «'+bandName(b2)+'»':'')+'.</div>';}
+  const ay=2026-(+$("mYear").value||0);
+  if(ay>3)f+='<div class="flag">🔴 Возраст по году выпуска '+ay+' → регистрационный сбор <b>500 МРП = '+tg_(500*MRP)+'</b> (ст. 615 п. 4 НК РК). Крупнейшая статья Казахстана. Фильтр закупа: строго до 3 лет по году выпуска.</div>';
+  if(requal)f+='<div class="flag">🔴 ПЕРЕКВАЛИФИКАЦИЯ. За 12 месяцев на это физлицо уже ввозили автомобиль, поэтому вторая машина не является товаром для личного пользования (Приказ Министра финансов РК от 31.03.2015 № 250, крит. «более 1 единицы в год»). Расчёт автоматически переведён на коммерческий контур: ЕТТ + НДС 16%. Это не запрет ввоза, а другой порядок начисления.</div>';
+  if(pers)f+='<div class="flag amber">⚠ Правило «не более 1 автомобиля на физлицо за 12 месяцев» — Приказ Минфина РК № 250 от 31.03.2015 (действует с 02.05.2015). С сентября 2026 усилено администрирование. Смежный критерий: пересечение границы физлицом не чаще 1 раза в месяц.</div>';
+  if(TS>=LUX_MRP*MRP)f+='<div class="flag amber">⚠ Акциз на роскошь 10% включён в расчёт: порог 18 000 МРП = '+tg_(LUX_MRP*MRP)+'. Начисляется и физлицу, и юрлицу — решение владельца 03.09.2026 (О-38): акциз это национальный налог сверх таможенных платежей, единая ставка ЕАЭС его не покрывает. Порог пересчитывается 1 января вместе с МРП.</div>';
+  if(pers&&TS>=LUX_MRP*MRP)f+='<div class="flag">🔴 Стоимость выше порога роскоши. Потолок казахстанского направления — 230,3 млн вон: выше него государство берёт с клиента больше, чем компания зарабатывает. Расчёт эскалировать владельцу.</div>';
+  if(estimated)f+='<div class="flag amber">⚠ Точного года в сетке нет — база получена экстраполяцией −15% за год. Это ОЦЕНКА, а не норма. Перед сделкой запросить базу у брокера.</div>';
+  f+='<div class="flag info">Регистрационный сбор подтверждён текстом ст. 615 п. 4 НК РК № 214-VIII (ступени: до 2 лет / 2–3 / старше 3 года), переходных положений для M1 в ст. 830 нет. Открытым остаётся одно: начисляется ли акциз 10% отдельно при личном ввозе по единой ставке (ст. 535 НК РК против ст. 266 ТК ЕАЭС) — на авто дороже 200 млн вон расчёт эскалируется владельцу. МРП-2026 = '+MRP+' ₸ (Закон РК № 239-VIII). Курс валют — nationalbank.kz, на момент расчёта.</div>';
+  if(cc>0)f+='<div class="flag amber">ℹ Электромобили этот расчёт НЕ покрывает: код 8703 80 000 считается по совокупному таможенному платежу, а не по единой ставке (Прил. 2 к Решению № 107, Табл. 2). Открытый вопрос О-35.</div>';
+  $("flags").innerHTML=f;
+  $("foot").textContent="Момент выпуска: "+madeMoment().toLocaleDateString("ru-RU")+" · декларация: "+declDate().toLocaleDateString("ru-RU")+" · база утиля 50 МРП = "+nf(UTIL_BASE)+" ₸ · источник курса: НБ РК ("+(RATE_SRC==="nbk"?"загружен":"сохранённый/ручной")+")";
+}
+(function(){$("rdate").value=todayISO();fillBrands();buildKzLinks();loadRates();
+  $("rateStatus").addEventListener("click",function(){loadRates();});
+  const tg=window.Telegram&&window.Telegram.WebApp;if(tg){try{tg.ready();tg.expand();}catch(e){}
+    ["lbKolesa","lbMycars","lbAster"].forEach(function(id){$(id).addEventListener("click",function(e){e.preventDefault();try{tg.openLink(this.href);}catch(_){window.open(this.href,"_blank");}});});}
+})();
+
+})();
+</script>
+<script>
+(function(){
+const R=window.ENCAR_RATES;const PFX="by-";const ROOT=document.getElementById("sec-by");const $=id=>document.getElementById(PFX+id);
+const state={st:"personal",fuel:"ice",mc:"yes",lg:"no",cur:"usd"};
+const DUTY_35=R.eaeu.duty35;
+const DUTY_5 =R.eaeu.duty5;
+const DUTY_LT3=R.eaeu.dutyLt3;
+function dutyRate(cc,band){const t=band==="mid"?DUTY_35:band==="old"?DUTY_5:null;if(!t)return null;for(const p of t)if(cc<=p[0])return p[1];}
+function ettMin(cc,old7){const E=R.eaeu.ett;if(cc>=R.eaeu.ett.ccMin&&cc<R.eaeu.ett.ccMid)return old7?E.cc1500_1800.old7:E.cc1500_1800.neu;if(cc>=R.eaeu.ett.ccMid&&cc<=R.eaeu.ett.ccMax)return old7?E.cc1800_3000.old7:E.cc1800_3000.neu;return null;}
+/* ПП Совмина РБ от 23.04.2026 № 195, прил. 2 — прямые суммы BYN */
+const UTIL_PERS=R.by.utilPers.table;
+const UTIL_ORG=R.by.utilOrg.table;
+function utilOrg(cc,ev,lt3){if(ev)return lt3?UTIL_ORG[0][1]:UTIL_ORG[0][2];
+  for(let i=1;i<UTIL_ORG.length;i++){if(cc<=UTIL_ORG[i][0]||UTIL_ORG[i][0]===Infinity)return lt3?UTIL_ORG[i][1]:UTIL_ORG[i][2];}
+  return lt3?UTIL_ORG[5][1]:UTIL_ORG[5][2];}
+const SBOR=R.by.sbor.value, REGFEE=R.by.regFee.value;
+/* ── КУРС: ТОЛЬКО НАЦБАНК РБ (правило владельца: каждая страна — свой ЦБ) ── */
+const FB=R.by.fx;
+let RATE_SRC="";
+function nowStamp(){var d=new Date(),p=function(n){return ("0"+n).slice(-2);};
+  return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear()+", "+p(d.getHours())+":"+p(d.getMinutes());}
+function todayDMY(){var d=new Date(),p=function(n){return ("0"+n).slice(-2);};
+  return p(d.getDate())+"."+p(d.getMonth()+1)+"."+d.getFullYear();}
+
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function setEditable(on){["usdby","eurby","krwby"].forEach(function(id){$(id).readOnly=!on;});}
+function loadRates(){
+  const b=$("rateStatus");b.textContent="загрузка…";b.className="rbadge";
+  const FXb=window.ENCAR_FX&&window.ENCAR_FX.by;
+  if(FXb){$("usdby").value=FXb.usd;$("eurby").value=FXb.eur;$("krwby").value=FXb.krw;
+    const fxD=window.ENCAR_FX.date||"";
+    if(fxD===todayDMY()){RATE_SRC="fx";setEditable(false);
+      b.textContent="Курс · "+fxD;b.className="rbadge ok";}
+    else{RATE_SRC="fx-stale";setEditable(true);
+      b.textContent="⚠ курс от "+fxD+", не на сегодня";b.className="rbadge warn";}
+    calc();}
+  const d=$("rdate").value||todayISO();
+  /* Два хоста одного и того же API НБ РБ: основной и запасной. */
+  const byGet=function(per){
+    const q="/exrates/rates?ondate="+d+"&periodicity="+per;
+    const one=function(host){return fetch(host+q).then(function(r){if(!r.ok)throw 0;return r.json();});};
+    return one("https://api.nbrb.by").catch(function(){return one("https://www.nbrb.by/api");});};
+  const daily=byGet(0);
+  const monthly=byGet(1).catch(function(){return [];});
+  return Promise.all([daily,monthly]).then(function(v){
+    const pick=function(arr,code){for(let i=0;i<arr.length;i++)if(arr[i].Cur_Abbreviation===code)return arr[i].Cur_OfficialRate/(arr[i].Cur_Scale||1);return null;};
+    const u=pick(v[0],"USD"),e=pick(v[0],"EUR");
+    if(u===null||e===null)throw new Error("нет валюты");
+    $("usdby").value=u.toFixed(4);$("eurby").value=e.toFixed(4);
+    const k=pick(v[1],"KRW");if(k!==null)$("krwby").value=(k*1000).toFixed(4);
+    RATE_SRC="nbrb";setEditable(false);
+    b.textContent="Курс · "+nowStamp();b.className="rbadge ok";calc();
+  }).catch(function(){if(RATE_SRC==="fx"||RATE_SRC==="fx-stale")return;
+    $("usdby").value=FB.usd;$("eurby").value=FB.eur;$("krwby").value=FB.krw;
+    RATE_SRC="fallback";setEditable(true);
+    b.textContent="✏️ впишите курс вручную";b.className="rbadge warn";calc();});}
+function madeMoment(){const y=+$("mYear").value||0;if(state.mc==="yes"){const m=+$("mMonth").value||7;return new Date(y,m-1,15);}return new Date(y,6,1);}
+function declDate(){const v=$("rdate").value;return v?new Date(v+"T00:00:00"):new Date();}
+function ageYears(){return (declDate()-madeMoment())/(365.2425*24*3600*1000);}
+function bandOf(a){return a<3?"new":a<=5?"mid":"old";}
+function bandName(b){return b==="new"?"до 3 лет":b==="mid"?"3–5 лет":"старше 5 лет";}
+function segWire(sel,key,fn){$(sel).addEventListener("click",function(e){const b=e.target.closest("button");if(!b)return;
+  Array.prototype.forEach.call(e.currentTarget.children,function(x){x.classList.remove("on");});b.classList.add("on");
+  state[key]=b.dataset[Object.keys(b.dataset)[0]];if(fn)fn();calc();});}
+segWire("stSel","st",function(){ROOT.querySelectorAll(".pers-only").forEach(function(e){e.classList.toggle("hidden",state.st!=="personal");});});
+segWire("fuelSel","fuel");segWire("mcSel","mc");segWire("lgSel","lg");
+segWire("curSel","cur",function(){ROOT.querySelectorAll(".cur-usd").forEach(function(e){e.classList.toggle("hidden",state.cur!=="usd");});ROOT.querySelectorAll(".cur-krw").forEach(function(e){e.classList.toggle("hidden",state.cur!=="krw");});});
+["buy","buyKrw","log","cc","mYear","usdby","eurby","krwby","sbkts","era","brk","rflog","retail","fxAdd"].forEach(function(id){$(id).addEventListener("input",calc);});
+$("mMonth").addEventListener("change",calc);
+/* курс не зависит от даты декларации: берётся на момент запроса расчёта */
+const nf=n=>Math.round(n).toLocaleString("ru-RU");
+const br_=n=>nf(n)+" BYN";
+function calc(){
+  const usd=+$("usdby").value||0, eur=+$("eurby").value||0, krw=+$("krwby").value||0;
+  const cc=+$("cc").value||0, log=+$("log").value||0;
+  const mk=1+((+$("fxAdd").value||0)/100);
+  const buyB0 = state.cur==="krw" ? (+$("buyKrw").value||0)*krw/1000 : (+$("buy").value||0)*usd;
+  const buy = usd>0 ? buyB0/usd : 0;
+  const sbkts=+$("sbkts").value||0, era=+$("era").value||0, brk=+$("brk").value||0, rflog=+$("rflog").value||0, retail=+$("retail").value||0;
+  const a=ageYears(), band=bandOf(a), lt3=a<3, pers=state.st==="personal", ev=state.fuel==="ev";
+  const log0=log*usd, TS=buyB0+log0;
+  const buyB=buyB0*mk, logB=log0*mk, fxPad=(buyB-buyB0)+(logB-log0);
+  let duty=0,dmode="",vat=0,lgSave=0;
+  if(pers){
+    if(ev){duty=0;dmode="электро — 0% (квота)";}
+    else if(band==="new"){const cvEur=eur>0?TS/eur:0;const b1=DUTY_LT3.find(function(x){return cvEur<=x[0];});
+      const pp=TS*b1[1],mp=cc*b1[2]*eur;duty=Math.max(pp,mp);dmode=(pp>=mp?(b1[1]*100)+"% ст-ти":"мин "+b1[2]+" €/см³");}
+    else{const rt=dutyRate(cc,band);duty=cc*rt*eur;dmode=rt+" €/см³";}
+    if(state.lg==="yes"&&state.fuel==="ice"){lgSave=duty*0.5;duty-=lgSave;}
+  }else{
+    const old7=a>7, mn=ettMin(cc,old7);
+    if(ev){duty=TS*0.15;dmode="15% (электро, юрлицо)";}
+    else if(old7){duty=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)*cc*eur;dmode=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)+" €/см³ (>7 лет)";}
+    else{const pp=TS*R.eaeu.ett.adValorem,mp=(mn!==null?mn:R.eaeu.ett.fallbackMin)*cc*eur;duty=Math.max(pp,mp);
+      dmode=(pp>=mp?(R.eaeu.ett.adValorem*100)+"% ТС":"мин "+(mn!==null?mn:R.eaeu.ett.fallbackMin)+" €/см³")+" (б/у до 7 лет)";}
+    vat=(TS+duty)*R.by.vat.value;
+  }
+  const util=pers?(lt3?UTIL_PERS.lt3:UTIL_PERS.ge3):utilOrg(cc,ev,lt3);
+  $("util").value=util.toFixed(2);
+  const gov=duty+vat+SBOR+util+REGFEE;
+  const full=buyB+logB+gov+sbkts+era+brk+rflog;
+  const profit=retail>0?retail-full:null, pct=(profit!==null&&full)?profit/full*100:null;
+  $("breakdown").innerHTML=
+    '<div class="line"><span class="k">Цена в Корее '+(state.cur==="krw"?"₩"+nf(+$("buyKrw").value||0):"$"+nf(buy))+'</span><span class="v">'+br_(buyB0)+'</span></div>'+
+    '<div class="line"><span class="k">Фрахт $'+nf(log)+'</span><span class="v">'+br_(log0)+'</span></div>'+
+    '<div class="line total"><span class="k">Таможенная стоимость (курс НБ РБ)</span><span class="v">'+br_(TS)+'</span></div>'+
+    
+    '<div class="line"><span class="k">Платежи государству</span><span class="v">'+br_(gov)+'</span></div>'+
+    '<div class="line sub2"><span class="k">'+(pers?"единая ставка ЕАЭС · ":"пошлина ЕТТ · ")+dmode+'</span><span class="v">'+br_(duty+lgSave)+'</span></div>'+
+    (lgSave>0?'<div class="line sub2"><span class="k">— льгота № 140 (−50%)</span><span class="v pos">−'+br_(lgSave)+'</span></div>':'')+
+    (vat?'<div class="line sub2"><span class="k">НДС 20%</span><span class="v">'+br_(vat)+'</span></div>':'')+
+    '<div class="line sub2"><span class="k">акциз</span><span class="v">0 — в РБ нет</span></div>'+
+    '<div class="line sub2"><span class="k">таможенный сбор</span><span class="v">'+br_(SBOR)+'</span></div>'+
+    '<div class="line sub2"><span class="k">утильсбор · '+(pers?"физлицо":"организация")+', '+(lt3?"до 3 лет":"старше 3 лет")+'</span><span class="v">'+br_(util)+'</span></div>'+
+    '<div class="line sub2"><span class="k">регистрация (3,12 БВ)</span><span class="v">'+br_(REGFEE)+'</span></div>'+
+    '<div class="line"><span class="k">СБКТС + ЭРА-РБ</span><span class="v">'+br_(sbkts+era)+'</span></div>'+
+    '<div class="line"><span class="k">Брокер + доставка</span><span class="v">'+br_(brk+rflog)+'</span></div>'+
+    '<div class="line grand"><span class="k">Полная себестоимость</span><span class="v">'+br_(full)+'</span></div>'+
+    '<div class="line"><span class="k">Розница РБ</span><span class="v">'+(retail>0?br_(retail):"—")+'</span></div>'+
+    '<div class="line total"><span class="k">Маржа</span><span class="v '+(profit!==null?(profit>=0?"pos":"neg"):"")+'">'+(profit!==null?br_(profit)+" · "+pct.toFixed(1)+"%":"нужна розница")+'</span></div>';
+  let cls="x",vt="—";if(pct!==null){cls=pct>=12?"g":pct>=6?"a":"r";vt=pct>=12?"🟢 ВЕЗТИ":pct>=6?"🟡 ТОНКО":"🔴 НЕ ВЫГОДНО";}
+  $("verdict").className="verdict "+cls;
+  $("verdict").innerHTML='<div class="vt">'+vt+(pct!==null?" · "+pct.toFixed(1)+"%":"")+'</div><div class="vm">'+
+    (pers?"физлицо — единая ставка ЕАЭС, НДС не начисляется":"юрлицо — ЕТТ + НДС 20%")+" · возраст "+a.toFixed(2)+" г. ("+bandName(band)+")</div>";
+  let f='';
+  if(fxPad)f+='<div class="flag amber">ℹ К закупу и фрахту добавлено +'+$("fxAdd").value+'% к курсу НБ РБ ('+br_(fxPad)+'). Таможенные платежи посчитаны по официальному курсу.</div>';
+  f+='<div class="flag info">✅ База утильсбора — объём двигателя и статус получателя (ПП Совмина РБ № 195 от 23.04.2026, прил. 2, сверено по pravo.by 02.09.2026). Логика «по мощности» — только для самоходных машин, на легковые не переносится.</div>';
+  if(RATE_SRC==="fx-stale")f+='<div class="flag">🔴 Курс не удалось получить на момент расчёта — показан курс от '+((window.ENCAR_FX&&window.ENCAR_FX.date)||"")+'. По правилу компании курс берётся на момент запроса: обновите его по ссылке на центробанк и впишите вручную. Такой расчёт клиенту не выдаётся.</div>';
+  if(RATE_SRC==="fallback")f+='<div class="flag">🔴 Курс валют не загрузился — подставлен сохранённый на '+FB.date+'.</div>';
+  if(state.mc==="no"){const y=+$("mYear").value||0,mm=+$("mMonth").value||7;
+    const a2=(declDate()-new Date(y,mm-1,15))/(365.2425*24*3600*1000),b2=bandOf(a2);
+    f+='<div class="flag amber">⚠ Месяц выпуска не подтверждён → момент выпуска принят <b>01.07.'+y+'</b> (ЕЭК № 74, п. 5). Категория: '+bandName(band)+(b2!==band?'. При подтверждении месяца станет «'+bandName(b2)+'»':'')+'.</div>';}
+  if(!pers)f+='<div class="flag">🔴 Утильсбор организации '+br_(util)+' против '+br_(pers?util:(lt3?UTIL_PERS.lt3:UTIL_PERS.ge3))+' у физлица. Коммерческий канал в РБ экономически закрыт — работать через физлицо-получателя.</div>';
+  if(a<2)f+='<div class="flag amber">⚠ Авто не старше 2 лет: при ввозе из другой страны ЕАЭС требуется независимая оценка и доплата разницы платежей, если заявленная стоимость ниже оценочной.</div>';
+  if(state.lg==="yes")f+='<div class="flag amber">⚠ Льгота № 140 (−50%) в единой методике компании не подтверждена — ТРЕБУЕТ ПРОВЕРКИ до применения в расчёте клиенту.</div>';
+  f+='<div class="flag info">СБКТС ≈ 630 и ЭРА-РБ ≈ 2 250 BYN — коммерческие прайсы, ОЦЕНКА, не норма. Источники: ЕЭК № 107 (ред. 24.02.2026), ЕЭК № 80, ЕЭК № 74 п. 5, ПП Совмина РБ № 195 от 23.04.2026, Указ № 443, ПП № 691, Закон РБ № 127-З (НДС 20%). Курс валют — api.nbrb.by, на момент расчёта; кросс-курсы не используются.</div>';
+  $("flags").innerHTML=f;
+  $("foot").textContent="Момент выпуска: "+madeMoment().toLocaleDateString("ru-RU")+" · декларация: "+declDate().toLocaleDateString("ru-RU")+" · акциз на легковые в РБ отсутствует";
+}
+(function(){$("rdate").value=todayISO();loadRates();
+  $("rateStatus").addEventListener("click",function(){loadRates();});
+  const tg=window.Telegram&&window.Telegram.WebApp;if(tg){try{tg.ready();tg.expand();}catch(e){}
+    ["lbAv","lbAbw"].forEach(function(id){$(id).addEventListener("click",function(e){e.preventDefault();try{tg.openLink(this.href);}catch(_){window.open(this.href,"_blank");}});});}
+})();
+
+})();
+</script>
+<script>
+(function(){var K=["rf","kz","by"];
+ function show(c){K.forEach(function(k){var s=document.getElementById("sec-"+k);if(s)s.hidden=(k!==c);var b=document.querySelector('#bar button[data-c="'+k+'"]');if(b)b.className=(k===c?"on":"");});try{window.scrollTo(0,0);}catch(e){}}
+ K.forEach(function(k){var b=document.querySelector('#bar button[data-c="'+k+'"]');if(b)b.addEventListener("click",function(e){e.preventDefault();show(k);});});
+ show("rf");})();
+</script>
+<script>
+/* Telegram Mini App: развернуть на весь экран и подхватить тему клиента */
+(function(){try{var t=window.Telegram&&window.Telegram.WebApp;if(!t)return;
+  t.ready();t.expand();if(t.enableClosingConfirmation)t.enableClosingConfirmation();
+  if(t.setHeaderColor)try{t.setHeaderColor("#E4E7E4");}catch(e){}
+  if(t.setBackgroundColor)try{t.setBackgroundColor("#E4E7E4");}catch(e){}
+}catch(e){}})();
+</script>
+</body>
+</html>
