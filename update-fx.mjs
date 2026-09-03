@@ -63,9 +63,23 @@ const byJson = a => {
   };
   return { usd: num(pick("USD")), eur: num(pick("EUR")), krw: num(pick("KRW") * 1000) };
 };
+/* НБ РБ держит два списка: ежедневный (periodicity=0) и ежемесячный
+   (periodicity=1). Доллар и евро — в ежедневном, южнокорейская вона — в
+   ежемесячном. Запрос только к ежедневному списку падал на «нет KRW», и
+   Беларусь оставалась на сохранённом курсе. Берём оба списка и склеиваем:
+   ежедневный первым, чтобы USD и EUR приходили из него. */
+const byBoth = async host => {
+  const daily = await get(host + "/exrates/rates?periodicity=0", "json");
+  let all = Array.isArray(daily) ? daily.slice() : [];
+  try {
+    const monthly = await get(host + "/exrates/rates?periodicity=1", "json");
+    if (Array.isArray(monthly)) all = all.concat(monthly);
+  } catch (e) { /* ежемесячный список не ответил — пробуем на том, что есть */ }
+  return byJson(all);
+};
 const BY = [
-  ["api.nbrb.by — основной хост", async () => byJson(await get("https://api.nbrb.by/exrates/rates?periodicity=0", "json"))],
-  ["www.nbrb.by/api — запасной хост", async () => byJson(await get("https://www.nbrb.by/api/exrates/rates?periodicity=0", "json"))],
+  ["api.nbrb.by — основной хост", () => byBoth("https://api.nbrb.by")],
+  ["www.nbrb.by/api — запасной хост", () => byBoth("https://www.nbrb.by/api")],
 ];
 
 /* ── сборка ── */
