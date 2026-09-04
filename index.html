@@ -81,6 +81,10 @@ input[readonly]{background:#F1EFE8;color:var(--ink);font-weight:600}
 <!-- Справочник ставок. Кладётся рядом с index.html. Если файла нет — работают
      значения по умолчанию, вшитые в страницу. -->
 <script src="rates.js" onerror="window.ENCAR_RATES_LOCAL=false"></script>
+<!-- Расчётное ядро. Один файл на мини-приложение и на публикатор витрины:
+     пока формулы жили в трёх блоках ниже отдельными копиями, правка ставки
+     в одной стране молча оставляла две другие на старой норме. -->
+<script src="calc.js" onerror="window.ENCAR_CALC=null"></script>
 <!-- Курсы, обновляемые ежедневно рабочим процессом GitHub Actions.
      Файл лежит на том же домене, поэтому читается всегда — в отличие от
      прямых запросов к сайтам центробанков, которые браузер блокирует. -->
@@ -522,8 +526,9 @@ const state={mode:"deal",st:"personal",pu:"own",mc:"yes",im:"no",fuel:"ice"};
 const DUTY_35=R.eaeu.duty35;
 const DUTY_5 =R.eaeu.duty5;
 const DUTY_LT3=R.eaeu.dutyLt3;
-function ettMin(cc,old7){ const E=R.eaeu.ett; if(cc>=R.eaeu.ett.ccMin&&cc<R.eaeu.ett.ccMid) return old7?E.cc1500_1800.old7:E.cc1500_1800.neu;
-  if(cc>=R.eaeu.ett.ccMid&&cc<=R.eaeu.ett.ccMax) return old7?E.cc1800_3000.old7:E.cc1800_3000.neu; return null; }
+/* Формула в calc.js; здесь делегат — функция ещё нужна сноске о
+   неподтверждённых кодах 8703 23 в блоке флагов. */
+function ettMin(cc,old7){return window.ENCAR_CALC.ettMin(R,cc,old7);}
 const BASE=R.rf.utilBase.value, KW_CAP=R.rf.kwCap.value;
 const POW=R.rf.util.pow;
 const V1000=R.rf.util.v1000;
@@ -531,14 +536,14 @@ const V2000=R.rf.util.v2000;
 const V3000=R.rf.util.v3000;
 const V3500=R.rf.util.v3500;
 const V3500P=R.rf.util.v3500p;
-function powIdx(kw){for(let i=0;i<POW.length;i++)if(kw<=POW[i])return i;return 15;}
+/* формула вынесена в calc.js */
 const POW_EV=R.rf.utilEv.pow, K_EV=R.rf.utilEv.k;
-function powIdxEv(kw){for(let i=0;i<POW_EV.length;i++)if(kw<=POW_EV[i])return i;return POW_EV.length-1;}
-function grpFor(cc){return cc<=1000?V1000:cc<=2000?V2000:cc<=3000?V3000:cc<=3500?V3500:V3500P;}
+/* формула вынесена в calc.js */
+/* формула вынесена в calc.js */
 /* FEE_PERSONAL отменён правкой методики № 25 от 04.09.2026 — сбор считается по шкале и для физлица */
 const FEE=R.rf.feeScale.table;
-function feeScale(ts){for(const p of FEE)if(ts<=p[0])return p[1];return FEE[FEE.length-1][1];}
-function dutyRate(cc,band){const t=band==="mid"?DUTY_35:band==="old"?DUTY_5:null;if(!t)return null;for(const p of t)if(cc<=p[0])return p[1];}
+/* формула вынесена в calc.js */
+function dutyRate(cc,band){return window.ENCAR_CALC.dutyRate(R,cc,band);}
 const MODELS={hyundai_tucson:{label:"Hyundai Tucson",b:"hyundai",m:"tucson",q:"Hyundai Tucson"},kia_sportage:{label:"Kia Sportage",b:"kia",m:"sportage",q:"Kia Sportage"},kia_k5:{label:"Kia K5",b:"kia",m:"k5",q:"Kia K5"},hyundai_sonata:{label:"Hyundai Sonata",b:"hyundai",m:"sonata",q:"Hyundai Sonata"},hyundai_santa_fe:{label:"Hyundai Santa Fe",b:"hyundai",m:"santa_fe",q:"Hyundai Santa Fe"},kia_sorento:{label:"Kia Sorento",b:"kia",m:"sorento",q:"Kia Sorento"},genesis_g80:{label:"Genesis G80",b:"genesis",m:"g80",q:"Genesis G80"}};
 /* ── КУРС: ТОЛЬКО ЦБ РФ (правило владельца: каждая страна — свой ЦБ) ── */
 const FB=R.rf.fx;
@@ -636,41 +641,40 @@ $("mMonth").addEventListener("change",calc);
 ["model","myear","mileage"].forEach(function(id){$(id).addEventListener("input",function(){buildLinks();calc();});});
 /* курс не зависит от даты декларации: берётся на момент запроса расчёта */
 var rub=function(n){return Math.round(n).toLocaleString("ru-RU")+" ₽";};
-function dutyPersonal(cc,band,cvRub,eur){
-  if(band==="new"){var cvEur=eur>0?cvRub/eur:0;var br=DUTY_LT3.find(function(b){return cvEur<=b[0];});
-    var pp=cvRub*br[1],mp=cc*br[2]*eur;return{v:Math.max(pp,mp),m:(pp>=mp)?(br[1]*100)+"% ст-ти":"мин "+br[2]+" €/см³"};}
-  var rt=dutyRate(cc,band);return{v:cc*rt*eur,m:rt+" €/см³"};}
+/* Осталось для сноски «месяц не подтверждён»: там показывается, какой
+   стала бы пошлина при другой возрастной ступени. Своей формулы здесь
+   больше нет — зовём ядро, чтобы сноска не могла разойтись с расчётом. */
+function dutyPersonal(cc,band,cvRub,eur){return window.ENCAR_CALC.dutyPersonal(R,cc,band,cvRub,eur);}
 function calc(){
+  /* ФОРМУЛЫ ЖИВУТ В calc.js. Здесь остались только сбор значений из
+     полей и отрисовка — ровно то, ради чего ядро и выносили: правка
+     ставки теперь делается в одном месте на три страны, а не в трёх
+     копиях, из которых легко забыть две. */
   var usd=+$("usd").value||0,eur=+$("eur").value||0,krwr=+$("krwr").value||0;
   var cc=+$("cc").value||0,kw=+$("kw").value||0,hp=+$("hp").value||0;
-  var a=ageYears(),band=bandOf(a);
   var log=+$("log").value||0,brk=+$("brk").value||0,misc=+$("misc").value||0,rflog=+$("rflog").value||0;
-  var mk=1+((+$("fxAdd").value||0)/100);
-  var cv0 = state.mode==="lot" ? (+$("buyKrw").value||0)*(krwr/1000) : (+$("buyUsd").value||0)*usd;
-  var log0=log*usd, TS=cv0+log0;
-  var cvRub=cv0*mk, logR=log0*mk, fxPad=(cvRub-cv0)+(logR-log0);
-  var duty=0,dmode="",excise=0,vat=0,fee=0;
-  var pers=personalRoute();
-  if(pers){var d=dutyPersonal(cc,band,cv0,eur);duty=d.v;dmode=d.m;fee=feeScale(TS);}
-  else{
-    var old7=a>7, mn=ettMin(cc,old7);
-    if(old7){duty=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)*cc*eur;dmode=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)+" €/см³ (>7 лет)";}
-    else{var pp=TS*R.eaeu.ett.adValorem, mp=(mn!==null?mn:R.eaeu.ett.fallbackMin)*cc*eur;duty=Math.max(pp,mp);
-         dmode=(pp>=mp?(R.eaeu.ett.adValorem*100)+"% ТС":"мин "+(mn!==null?mn:R.eaeu.ett.fallbackMin)+" €/см³")+" (б/у до 7 лет)";}
-    excise=hp*(+$("exRate").value||0);
-    vat=(TS+duty+excise)*R.rf.vat.value;
-    fee=feeScale(TS);
-  }
+  var C=window.ENCAR_CALC;
+  if(!C){$("breakdown").innerHTML='<div class="flag">🔴 Не загрузился calc.js — расчётное ядро. Расчёт не выполняется.</div>';return;}
+  var r=C.calcRU({
+    usd:usd, eur:eur, krwr:krwr, cc:cc, kw:kw, hp:hp,
+    year:+$("mYear").value||0, month:+$("mMonth").value||7,
+    monthConfirmed: state.mc==="yes", declISO: $("rdate").value||null,
+    mode: state.mode, buyUsd:+$("buyUsd").value||0, buyKrw:+$("buyKrw").value||0,
+    log:log, brk:brk, misc:misc, rflog:rflog,
+    fxAdd:+$("fxAdd").value||0, exRate:+$("exRate").value||0,
+    personal: state.st==="personal", purposeOwn: state.pu==="own",
+    importedLastYear: state.im, fuel: state.fuel,
+    market:+$("market").value||0, markupRub:+$("markupRub").value||0
+  }, R);
+  var a=r.age, band=r.band, pers=r.personal;
+  var cv0=r.priceLocal, log0=r.freight, TS=r.customsValue;
+  var cvRub=r.priceWithMarkup, logR=r.freightWithMarkup, fxPad=r.fxMarkup;
+  var duty=r.duty, dmode=r.dutyMode, excise=r.excise, vat=r.vat, fee=r.fee;
+  var util=r.util, utilC=r.utilCommercial, surcharge=r.utilSurcharge;
+  var eligible=r.utilEligible, kL=r.utilK, kC=r.utilKCommercial;
+  var gov=r.gov, vvo=r.costVladivostok, full=r.total;
   var isEv=state.fuel!=="ice";
   var kwCapEff=isEv?R.rf.utilPref.kwCapEv:KW_CAP;
-  var eligible=pers&&kw<=kwCapEff&&state.im==="no"&&(isEv||cc<=R.rf.utilPref.ccMax);
-  var ai=band==="new"?0:1;
-  var kC=isEv?K_EV[powIdxEv(kw)][ai]:grpFor(cc)[powIdx(kw)][ai];
-  var kL=eligible?(band==="new"?R.rf.utilPref.neu:R.rf.utilPref.old):kC;
-  var util=BASE*kL, utilC=BASE*kC, surcharge=utilC-util;
-  var gov=duty+excise+vat+fee+util;
-  var vvo=cvRub+logR+gov+brk+misc;
-  var full=vvo+rflog;
   var html=
     '<div class="line"><span class="k">Цена в Корее</span><span class="v">'+rub(cv0)+'</span></div>'+
     '<div class="line"><span class="k">Фрахт Корея→Владивосток</span><span class="v">'+rub(log0)+'</span></div>'+
@@ -736,21 +740,21 @@ const R=window.ENCAR_RATES;const GRID={"ACURA":{"MDX":{"3500":{"2026":28750,"202
 const MRP=R.kz.mrp.value;
 const UTIL_BASE=R.kz.utilBaseMrp.value*MRP;
 const UTIL_K=R.kz.utilK.table;
-function utilK(cc,rt){const t=UTIL_K[rt];return cc<=1000?t[1000]:cc<=2000?t[2000]:cc<=3000?t[3000]:t[9999];}
+/* формула вынесена в calc.js */
 /* Электро (кроме гибридных): коэффициент 0 при прямом ввозе, 60 при ввозе из РФ/РБ.
    Гибриды под нулевой коэффициент НЕ подпадают — считаются по объёму двигателя. */
-function utilKEv(rt){return R.kz.utilKEv[rt];}
-function regFeeEv(ageY){const t=R.kz.regFeeEv.table;for(const q of t)if(ageY<q[0])return q[1]*MRP;return t[t.length-1][1]*MRP;}
+/* формула вынесена в calc.js */
+/* формула вынесена в calc.js */
 /* СПОРНАЯ СТУПЕНЬ — О-37. Обе версии лежат в справочнике ставок, переключатель R.kz.regFee.version */
 /* Возраст от ДАТЫ ПРОИЗВОДСТВА — единое правило для всех стран и всех статей (владелец, 03.09.2026) */
-function regFee(ageY){const G=R.kz.regFee;const t=G[G.version]||G.st615;for(const q of t)if(ageY<q[0])return q[1]*MRP;return t[t.length-1][1]*MRP;}
+/* формула вынесена в calc.js */
 const SBOR=R.kz.sborMrp.value*MRP;
 const LUX_MRP=R.kz.luxMrp.value;
 const DUTY_35=R.eaeu.duty35;
 const DUTY_5 =R.eaeu.duty5;
 const DUTY_LT3=R.eaeu.dutyLt3;
-function dutyRate(cc,band){const t=band==="mid"?DUTY_35:band==="old"?DUTY_5:null;if(!t)return null;for(const p of t)if(cc<=p[0])return p[1];}
-function ettMin(cc,old7){const E=R.eaeu.ett;if(cc>=R.eaeu.ett.ccMin&&cc<R.eaeu.ett.ccMid)return old7?E.cc1500_1800.old7:E.cc1500_1800.neu;if(cc>=R.eaeu.ett.ccMid&&cc<=R.eaeu.ett.ccMax)return old7?E.cc1800_3000.old7:E.cc1800_3000.neu;return null;}
+function dutyRate(cc,band){return window.ENCAR_CALC.dutyRate(R,cc,band);}
+function ettMin(cc,old7){return window.ENCAR_CALC.ettMin(R,cc,old7);}
 const TR={"А":"a","Б":"b","В":"v","Г":"g","Д":"d","Е":"e","Ж":"zh","З":"z","И":"i","Й":"y","К":"k","Л":"l","М":"m","Н":"n","О":"o","П":"p","Р":"r","С":"s","Т":"t","У":"u","Ф":"f","Х":"h","Ц":"ts","Ч":"ch","Ш":"sh","Щ":"sch","Ы":"y","Э":"e","Ю":"yu","Я":"ya"};
 function kslug(s){return String(s||"").toUpperCase().split("").map(function(c){return TR[c]!==undefined?TR[c]:c;}).join("").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");}
 const PFX="kz-";const ROOT=document.getElementById("sec-kz");const $=id=>document.getElementById(PFX+id);
@@ -871,33 +875,29 @@ function calc(){
     $("gridNote").textContent="Таможенная база: $"+nf(baseUSD)+" ("+gnote+")";}
   else if(state.src==="manual"){baseUSD=+$("manualUsd").value||0;gnote="ручной ввод";}
   else{baseUSD=buy+fracht;gnote="инвойс + фрахт, курс НБ РК";}
-  const TS=baseUSD*fx;
-  let duty=0,dmode="",excise=0,exMode="",vat=0;
-  if(pers){
-    if(band==="new"){const cvEur=fxe>0?TS/fxe:0;const br=DUTY_LT3.find(function(b){return cvEur<=b[0];});
-      const pp=TS*br[1],mp=cc*br[2]*fxe;duty=Math.max(pp,mp);dmode=(pp>=mp?(br[1]*100)+"% ст-ти":"мин "+br[2]+" €/см³");}
-    else{const rt=dutyRate(cc,band);duty=cc*rt*fxe;dmode=rt+" €/см³";}
-  }else{
-    const old7=a>7, mn=ettMin(cc,old7);
-    if(old7){duty=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)*cc*fxe;dmode=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)+" €/см³ (>7 лет)";}
-    else{const pp=TS*R.eaeu.ett.adValorem,mp=(mn!==null?mn:R.eaeu.ett.fallbackMin)*cc*fxe;duty=Math.max(pp,mp);
-      dmode=(pp>=mp?(R.eaeu.ett.adValorem*100)+"% ТС":"мин "+(mn!==null?mn:R.eaeu.ett.fallbackMin)+" €/см³")+" (б/у до 7 лет)";}
-    if(cc>R.kz.exciseVolume.ccOver){excise=cc*R.kz.exciseVolume.rate;exMode=R.kz.exciseVolume.rate+" ₸/см³ (V>3,0 л)";}
-  }
-  /* Акциз на роскошь — национальный налог сверх таможенных платежей, начисляется
-     и физлицу, и юрлицу (решение владельца 03.09.2026, О-38). */
-  if(R.kz.luxRate.appliesToIndividual!==false && TS>=LUX_MRP*MRP){
-    excise+=TS*R.kz.luxRate.value;
-    exMode=(exMode?exMode+" + ":"")+(R.kz.luxRate.value*100)+"% роскошь";
-  }
-  /* НДС только юрлицу; база — ТС + пошлина + акцизы, как было до правки 03.09.2026 */
-  if(!pers) vat=(TS+duty+excise)*R.kz.vat.value;
+  /* ФОРМУЛЫ — в calc.js (см. комментарий у российского блока). Здесь
+     остаётся выбор таможенной базы: он завязан на интерфейс (сетка /
+     ручной ввод / инвойс), поэтому вычисляется до вызова ядра. */
+  const C=window.ENCAR_CALC;
+  if(!C){$("breakdown").innerHTML='<div class="flag">🔴 Не загрузился calc.js — расчётное ядро. Расчёт не выполняется.</div>';return;}
+  const r=C.calcKZ({
+    fx:fx, fxe:fxe, fxk:fxk, cc:cc, fracht:fracht, baseUsd:baseUSD,
+    year:+$("mYear").value||0, month:+$("mMonth").value||7,
+    monthConfirmed: state.mc==="yes", declISO: $("rdate").value||null,
+    cur: state.cur, buy:+$("buy").value||0, buyKrw:+$("buyKrw").value||0,
+    broker:broker, sbkts:sbkts, srts:srts, retail:retail,
+    fxAdd:+$("fxAdd").value||0,
+    personal: state.st==="personal", importedLastYear: state.im,
+    route: state.rt, fuel: state.fuel
+  }, R);
+  const TS=r.customsValue;
+  const duty=r.duty, dmode=r.dutyMode, excise=r.excise, exMode=r.exciseMode, vat=r.vat;
   const isEv=state.fuel==="ev";
-  const kU=isEv?utilKEv(state.rt):utilK(cc,state.rt), util=UTIL_BASE*kU, reg=isEv?regFeeEv(a):regFee(a);
-  const gov=duty+excise+vat+SBOR+util+reg;
+  const kU=r.utilK, util=r.util, reg=r.regFee;
+  const gov=r.gov;
   const fr0=fracht*fx;
-  const buyKZT=buy0*mk, frKZT=fr0*mk, fxPad=(buyKZT-buy0)+(frKZT-fr0);
-  const full=buyKZT+frKZT+gov+broker+sbkts+srts;
+  const buyKZT=r.priceWithMarkup, frKZT=r.freightWithMarkup, fxPad=r.fxMarkup;
+  const full=r.total;
   const profit=retail>0?retail-full:null, pct=(profit!==null&&full)?profit/full*100:null;
   $("breakdown").innerHTML=
     '<div class="line"><span class="k">Закуп (encar) '+(state.cur==="krw"?"₩"+nf(+$("buyKrw").value||0):"$"+nf(buy))+'</span><span class="v">'+tg_(buy0)+'</span></div>'+
@@ -954,14 +954,12 @@ const state={st:"personal",fuel:"ice",mc:"yes",lg:"no",cur:"usd"};
 const DUTY_35=R.eaeu.duty35;
 const DUTY_5 =R.eaeu.duty5;
 const DUTY_LT3=R.eaeu.dutyLt3;
-function dutyRate(cc,band){const t=band==="mid"?DUTY_35:band==="old"?DUTY_5:null;if(!t)return null;for(const p of t)if(cc<=p[0])return p[1];}
-function ettMin(cc,old7){const E=R.eaeu.ett;if(cc>=R.eaeu.ett.ccMin&&cc<R.eaeu.ett.ccMid)return old7?E.cc1500_1800.old7:E.cc1500_1800.neu;if(cc>=R.eaeu.ett.ccMid&&cc<=R.eaeu.ett.ccMax)return old7?E.cc1800_3000.old7:E.cc1800_3000.neu;return null;}
+function dutyRate(cc,band){return window.ENCAR_CALC.dutyRate(R,cc,band);}
+function ettMin(cc,old7){return window.ENCAR_CALC.ettMin(R,cc,old7);}
 /* ПП Совмина РБ от 23.04.2026 № 195, прил. 2 — прямые суммы BYN */
 const UTIL_PERS=R.by.utilPers.table;
 const UTIL_ORG=R.by.utilOrg.table;
-function utilOrg(cc,ev,lt3){if(ev)return lt3?UTIL_ORG[0][1]:UTIL_ORG[0][2];
-  for(let i=1;i<UTIL_ORG.length;i++){if(cc<=UTIL_ORG[i][0]||UTIL_ORG[i][0]===Infinity)return lt3?UTIL_ORG[i][1]:UTIL_ORG[i][2];}
-  return lt3?UTIL_ORG[5][1]:UTIL_ORG[5][2];}
+/* формула вынесена в calc.js */
 const SBOR=R.by.sbor.value, REGFEE=R.by.regFee.value;
 /* ── КУРС: ТОЛЬКО НАЦБАНК РБ (правило владельца: каждая страна — свой ЦБ) ── */
 const FB=R.by.fx;
@@ -1030,25 +1028,23 @@ function calc(){
   const a=ageYears(), band=bandOf(a), lt3=a<3, pers=state.st==="personal", ev=state.fuel==="ev";
   const log0=log*usd, TS=buyB0+log0;
   const buyB=buyB0*mk, logB=log0*mk, fxPad=(buyB-buyB0)+(logB-log0);
-  let duty=0,dmode="",vat=0,lgSave=0;
-  if(pers){
-    if(ev){duty=0;dmode="электро — 0% (квота)";}
-    else if(band==="new"){const cvEur=eur>0?TS/eur:0;const b1=DUTY_LT3.find(function(x){return cvEur<=x[0];});
-      const pp=TS*b1[1],mp=cc*b1[2]*eur;duty=Math.max(pp,mp);dmode=(pp>=mp?(b1[1]*100)+"% ст-ти":"мин "+b1[2]+" €/см³");}
-    else{const rt=dutyRate(cc,band);duty=cc*rt*eur;dmode=rt+" €/см³";}
-    if(state.lg==="yes"&&state.fuel==="ice"){lgSave=duty*0.5;duty-=lgSave;}
-  }else{
-    const old7=a>7, mn=ettMin(cc,old7);
-    if(ev){duty=TS*0.15;dmode="15% (электро, юрлицо)";}
-    else if(old7){duty=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)*cc*eur;dmode=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)+" €/см³ (>7 лет)";}
-    else{const pp=TS*R.eaeu.ett.adValorem,mp=(mn!==null?mn:R.eaeu.ett.fallbackMin)*cc*eur;duty=Math.max(pp,mp);
-      dmode=(pp>=mp?(R.eaeu.ett.adValorem*100)+"% ТС":"мин "+(mn!==null?mn:R.eaeu.ett.fallbackMin)+" €/см³")+" (б/у до 7 лет)";}
-    vat=(TS+duty)*R.by.vat.value;
-  }
-  const util=pers?(lt3?UTIL_PERS.lt3:UTIL_PERS.ge3):utilOrg(cc,ev,lt3);
+  /* ФОРМУЛЫ — в calc.js (см. комментарий у российского блока). */
+  const C=window.ENCAR_CALC;
+  if(!C){$("breakdown").innerHTML='<div class="flag">🔴 Не загрузился calc.js — расчётное ядро. Расчёт не выполняется.</div>';return;}
+  const r=C.calcBY({
+    usd:usd, eur:eur, krw:krw, cc:cc, log:log,
+    year:+$("mYear").value||0, month:+$("mMonth").value||7,
+    monthConfirmed: state.mc==="yes", declISO: $("rdate").value||null,
+    cur: state.cur, buy:+$("buy").value||0, buyKrw:+$("buyKrw").value||0,
+    sbkts:sbkts, era:era, brk:brk, rflog:rflog, retail:retail,
+    fxAdd:+$("fxAdd").value||0,
+    personal: state.st==="personal", fuel: state.fuel, privilege: state.lg
+  }, R);
+  const duty=r.duty, dmode=r.dutyMode, vat=r.vat, lgSave=r.privilegeSaved;
+  const util=r.util;
   $("util").value=util.toFixed(2);
-  const gov=duty+vat+SBOR+util+REGFEE;
-  const full=buyB+logB+gov+sbkts+era+brk+rflog;
+  const gov=r.gov;
+  const full=r.total;
   const profit=retail>0?retail-full:null, pct=(profit!==null&&full)?profit/full*100:null;
   $("breakdown").innerHTML=
     '<div class="line"><span class="k">Цена в Корее '+(state.cur==="krw"?"₩"+nf(+$("buyKrw").value||0):"$"+nf(buy))+'</span><span class="v">'+br_(buyB0)+'</span></div>'+
