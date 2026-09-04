@@ -424,7 +424,7 @@ window.ENCAR_RATES = {
     excise:{ value:613, unit:"RUB/л.с.", _source:"ст. 193 НК РФ, период 2026, диапазон 112,5–150 кВт",
              checked_at:"2026-09-02", requires_verification:true,
              _note:"вне диапазона 112,5–150 кВт ставка не заведена — вводится вручную" },
-    feePersonal:{ value:689, unit:"RUB", _source:"ПП РФ от 28.11.2024 № 1637 / ПП РФ от 23.10.2025 № 1638", checked_at:"2026-09-02", requires_verification:false },
+    feePersonal:{ value:null, unit:"RUB", deprecated:true, _source:"ОТМЕНЕНО решением владельца 04.09.2026 (правка методики № 25): ставка 689 ₽ для товаров личного пользования не применяется, сбор считается по шкале feeScale и для физлица", checked_at:"2026-09-04", requires_verification:true, _conflict:"прежнее прочтение п. 5 ПП РФ № 1637 давало 689 ₽; дословный текст из первоисточника не получен. Закрывается квитанцией ТПО первой сделки по России" },
     util:{ _source:"ПП РФ от 01.11.2025 № 1713 (с 01.12.2025), Перечень к ПП РФ № 1291; столбец с 01.01.2026",
            checked_at:"2026-09-02", requires_verification:true,
            _note:"О-25: привязка пары коэффициентов к колонке года построчно не подтверждена",
@@ -445,8 +445,8 @@ window.ENCAR_RATES = {
     vat:{ value:0.16, _source:"НК РК от 18.07.2025 № 214-VIII, глава 47 / ст. 503", checked_at:"2026-09-02", requires_verification:false },
     mrp:{ value:4325, unit:"KZT", _source:"Закон РК о республиканском бюджете на 2026–2028 № 239", checked_at:"2026-09-02", requires_verification:false },
     utilBaseMrp:{ value:50, _source:"приказ и.о. Министра экологии РК от 02.11.2021 № 448, прил. 4 в ред. приказа от 20.03.2026 № 54", checked_at:"2026-09-02", requires_verification:false },
-    utilK:{ _source:"там же, прил. 4; коэффициент зависит от объёма И МАРШРУТА (из РФ/РБ — кратно выше)",
-            checked_at:"2026-09-02", requires_verification:false,
+    utilK:{ _source:"приказ и.о. Министра экологии РК от 02.11.2021 № 448, Приложение 4 в редакции приказа Министра экологии и природных ресурсов РК от 20.03.2026 № 54; ПОДТВЕРЖДЕНО ПО ПЕРВОИСТОЧНИКУ adilet.zan.kz/rus/docs/V2100025100 04.09.2026. База — РАБОЧИЙ ОБЪЁМ ДВИГАТЕЛЯ (не мощность) плюс маршрут: коэффициент 1 — прямой ввоз, коэффициент 2 — из РФ или РБ",
+            checked_at:"2026-09-04", requires_verification:false,
             table:{direct:{1000:1.5,2000:3.5,3000:5.0,9999:11.5},eaeu:{1000:22,2000:136,3000:164,9999:246}} },
     sborMrp:{ value:6, _source:"ПП РК от 05.04.2018 № 171 в ред. ПП РК от 02.08.2023 № 631", checked_at:"2026-09-02", requires_verification:false },
     luxMrp:{ value:18000, _source:"НК РК № 214-VIII, п. 6 ст. 537 — акциз на роскошь 10% от стоимости", checked_at:"2026-09-02", requires_verification:false },
@@ -535,7 +535,7 @@ function powIdx(kw){for(let i=0;i<POW.length;i++)if(kw<=POW[i])return i;return 1
 const POW_EV=R.rf.utilEv.pow, K_EV=R.rf.utilEv.k;
 function powIdxEv(kw){for(let i=0;i<POW_EV.length;i++)if(kw<=POW_EV[i])return i;return POW_EV.length-1;}
 function grpFor(cc){return cc<=1000?V1000:cc<=2000?V2000:cc<=3000?V3000:cc<=3500?V3500:V3500P;}
-const FEE_PERSONAL=R.rf.feePersonal.value;
+/* FEE_PERSONAL отменён правкой методики № 25 от 04.09.2026 — сбор считается по шкале и для физлица */
 const FEE=R.rf.feeScale.table;
 function feeScale(ts){for(const p of FEE)if(ts<=p[0])return p[1];return FEE[FEE.length-1][1];}
 function dutyRate(cc,band){const t=band==="mid"?DUTY_35:band==="old"?DUTY_5:null;if(!t)return null;for(const p of t)if(cc<=p[0])return p[1];}
@@ -651,7 +651,7 @@ function calc(){
   var cvRub=cv0*mk, logR=log0*mk, fxPad=(cvRub-cv0)+(logR-log0);
   var duty=0,dmode="",excise=0,vat=0,fee=0;
   var pers=personalRoute();
-  if(pers){var d=dutyPersonal(cc,band,cv0,eur);duty=d.v;dmode=d.m;fee=FEE_PERSONAL;}
+  if(pers){var d=dutyPersonal(cc,band,cv0,eur);duty=d.v;dmode=d.m;fee=feeScale(TS);}
   else{
     var old7=a>7, mn=ettMin(cc,old7);
     if(old7){duty=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)*cc*eur;dmode=(mn!==null?mn:R.eaeu.ett.fallbackMinOld7)+" €/см³ (>7 лет)";}
@@ -680,7 +680,7 @@ function calc(){
     '<div class="line sub2"><span class="k">'+(pers?"единая ставка ЕАЭС · ":"пошлина ЕТТ · ")+dmode+'</span><span class="v">'+rub(duty)+'</span></div>'+
     (excise?'<div class="line sub2"><span class="k">акциз · '+$("exRate").value+' ₽/л.с. × '+hp+'</span><span class="v">'+rub(excise)+'</span></div>':'')+
     (vat?'<div class="line sub2"><span class="k">НДС 22%</span><span class="v">'+rub(vat)+'</span></div>':'')+
-    '<div class="line sub2"><span class="k">таможенный сбор'+(pers?" · "+FEE_PERSONAL+" ₽ (личное)":" · шкала")+'</span><span class="v">'+rub(fee)+'</span></div>'+
+    '<div class="line sub2"><span class="k">таможенный сбор · шкала</span><span class="v">'+rub(fee)+'</span></div>'+
     '<div class="line sub2"><span class="k">утильсбор · '+(eligible?"льготный K="+kL:"коммерческий K="+kL)+'</span><span class="v">'+rub(util)+'</span></div>'+
     '<div class="line"><span class="k">Брокер + ЭПТС + СБКТС</span><span class="v">'+rub(brk)+'</span></div>'+
     '<div class="line"><span class="k">СВХ + перегон</span><span class="v">'+rub(misc)+'</span></div>'+
