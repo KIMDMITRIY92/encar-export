@@ -140,6 +140,17 @@
     var a = ageYears(i.declISO, i.year, i.month, i.monthConfirmed !== false);
     var band = bandOf(a);
     var log = +i.log || 0, brk = +i.brk || 0, misc = +i.misc || 0, rflog = +i.rflog || 0;
+    /* О-57 ЗАКРЫТ владельцем 20.09.2026: СБКТС и ЭПТС по России ВХОДЯТ
+       в услуги брокера. Значит брокерские 80 000 ₽ в составе цены — это
+       не только оформление у брокера, но и СБКТС с ЭПТС, и отдельной
+       строки по России быть не должно. Записано здесь, чтобы следующий
+       читатель не искал «потерянную» статью: у КЗ и РБ она отдельная,
+       у РФ — внутри брокерских, и это НЕ пропуск.
+
+       Параметр sbkts оставлен как задел на случай, если брокер начнёт
+       выставлять оформление отдельным счётом. Боевой расчёт его НЕ
+       передаёт, поэтому он равен нулю и на числа не влияет. */
+    var sbkts = +i.sbkts || 0;
     var mk = 1 + ((+i.fxAdd || 0) / 100);
     var cv0 = i.mode === 'lot' ? (+i.buyKrw || 0) * (krwr / 1000) : (+i.buyUsd || 0) * usd;
     var log0 = log * usd, TS = cv0 + log0;
@@ -154,8 +165,17 @@
       duty = d.v; dmode = d.m;
       /* Ставка 689 ₽ для товаров личного пользования ОТМЕНЕНА решением
          владельца 04.09.2026 (правка методики № 25): сбор считается по
-         общей шкале и физлицу тоже. */
-      fee = feeScale(R, TS);
+         общей шкале и физлицу тоже.
+
+         ⚠️ ДЕФЕКТ ДК-02, найден 20.09.2026 проверкой поста Kia Ray.
+         База сбора бралась как TS (закуп + фрахт), хотя пошлина строкой
+         выше берётся от cv0. Одна функция считала две базы.
+         п. 1 ст. 267 ТК ЕАЭС: «В стоимость товаров для личного
+         пользования не включаются расходы по их перевозке и
+         страхованию». Значит для физлица база и пошлины, и сбора — cv0.
+         Для юрлица ниже остаётся TS: там таможенная стоимость
+         определяется по общим правилам и доставку включает. */
+      fee = feeScale(R, cv0);
     } else {
       var e = dutyEtt(R, cc, a, TS, eur);
       duty = e.v; dmode = e.m;
@@ -180,7 +200,7 @@
     var util = BASE * kL, utilC = BASE * kC, surcharge = utilC - util;
 
     var gov = duty + excise + vat + fee + util;
-    var vvo = cvRub + logR + gov + brk + misc;
+    var vvo = cvRub + logR + gov + brk + misc + sbkts;
     var full = vvo + rflog;
 
     var market = +i.market || 0;
@@ -193,6 +213,7 @@
       priceLocal: cv0, freight: log0, customsValue: TS,
       fxMarkup: fxPad, priceWithMarkup: cvRub, freightWithMarkup: logR,
       duty: duty, dutyMode: dmode, excise: excise, vat: vat, fee: fee,
+      sbkts: sbkts,
       util: util, utilCommercial: utilC, utilSurcharge: surcharge,
       utilEligible: eligible, utilK: kL, utilKCommercial: kC,
       kw: kw, kwDoc: kwDoc, kwSource: kwSource, kwCap: kwCapEff, hp: hp, hpEl: hpEl, fuel: fuel,
@@ -344,7 +365,13 @@
     if (pers) {
       if (ev) { duty = 0; dmode = 'электро — 0% (квота)'; }
       else {
-        var d = dutyPersonal(R, cc, band, TS, eur);
+        /* ⚠️ ДЕФЕКТ ДК-01, найден 20.09.2026 проверкой поста Kia Ray.
+           Здесь стояло TS (с фрахтом), а calcRU той же нормой считал от
+           цены без фрахта — две страны считали ст. 267 ТК ЕАЭС
+           по-разному. Кодекс для ЕАЭС один, Беларусь его член, поэтому
+           база приведена к buyB0. На лоте Kia Ray правка снимает
+           5 523 BYN завышения. */
+        var d = dutyPersonal(R, cc, band, buyB0, eur);
         duty = d.v; dmode = d.m;
       }
       if (i.privilege === 'yes' && i.fuel === 'ice') { lgSave = duty * 0.5; duty -= lgSave; }
@@ -383,7 +410,7 @@
   }
 
   var API = {
-    version: '1.3',
+    version: '1.4',
     calcRU: calcRU, calcKZ: calcKZ, calcBY: calcBY,
     /* вспомогательное — нужно и интерфейсу, и публикатору */
     madeMoment: madeMoment, declDate: declDate, ageYears: ageYears,
