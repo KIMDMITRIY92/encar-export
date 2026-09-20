@@ -689,7 +689,7 @@ function calc(){
   var cvRub=r.priceWithMarkup, logR=r.freightWithMarkup, fxPad=r.fxMarkup;
   var duty=r.duty, dmode=r.dutyMode, excise=r.excise, vat=r.vat, fee=r.fee;
   var util=r.util, utilC=r.utilCommercial, surcharge=r.utilSurcharge;
-  var eligible=r.utilEligible, kL=r.utilK, kC=r.utilKCommercial;
+  var eligible=r.utilEligible, kL=r.utilK, kC=r.utilKCommercial; if(r.kw>0)kw=r.kw; /* П-3: во флагах — мощность, по которой считало ядро */
   var gov=r.gov, vvo=r.costVladivostok, full=r.total;
   var isEv=state.fuel!=="ice";
   var kwCapEff=isEv?R.rf.utilPref.kwCapEv:KW_CAP;
