@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════
    ENCAR EXPORT — РАСЧЁТНОЕ ЯДРО (РФ · КЗ · РБ)
-   calc.js · ред. 1.2 от 20.09.2026 (ДМ-9 / П-3: мощность из л.с. по 0,7355, поле кВт — справочное)
+   calc.js · ред. 1.3 от 20.09.2026 (П-3: мощность из л.с.; гибриды: параллельный — по объёму с суммой мощностей, последовательный — как электро)
 
    ЗАЧЕМ ЭТОТ ФАЙЛ СУЩЕСТВУЕТ.
    До него формулы жили внутри index.html, в трёх независимых блоках
@@ -109,11 +109,19 @@
        exRate                акциз ₽/л.с. (коммерческая ветка)
        personal, purposeOwn  статус и цель ввоза
        importedLastYear      'yes'|'no' — ввозил ли авто за 12 мес
-       fuel                  'ice' | иное (электро/гибрид)
+       fuel                  'ice' | 'hybrid' (параллельный) | 'ev' (электро, последовательный гибрид)
+       hpEl                  л.с. электродвигателя — только для 'hybrid', суммируется с hp
        market, markupRub     для вердикта                            */
   function calcRU(i, R) {
     var usd = +i.usd || 0, eur = +i.eur || 0, krwr = +i.krwr || 0;
-    var cc = +i.cc || 0, kw = +i.kw || 0, hp = +i.hp || 0;
+    var cc = +i.cc || 0, kw = +i.kw || 0, hp = +i.hp || 0, hpEl = +i.hpEl || 0;
+    /* Тип силовой установки (решение владельца 20.09.2026, вариант 1 по гибридам):
+       'ice' — ДВС; 'hybrid' — ПАРАЛЛЕЛЬНЫЙ гибрид: строка Перечня по объёму,
+       мощность = ДВС + максимальная 30-минутная мощность электродвигателя
+       (ПП РФ № 1713, сноска к разделу I); 'ev' — электромобиль и гибрид
+       ПОСЛЕДОВАТЕЛЬНОГО типа: шкала только по мощности, порог льготы 58,84 кВт. */
+    var fuel = i.fuel || 'ice';
+    if (fuel === 'hybrid') hp = hp + hpEl;
     /* 20.09.2026 (ДМ-9): если кВт не задан, а л.с. известны — кВт выводится
        по метрической л.с. 0,7355 (160 л.с. = 117,68 кВт, ровно порог льготы).
        Пересчёт по 0,7457 давал 119,31 кВт и ложно снимал льготу. Заданный
@@ -160,7 +168,7 @@
        объём ≤ порога И мощность ≤ порога, оба включительно (правило
        владельца П-1 от 03.09.2026). Превышение любого одного снимает
        льготу целиком. */
-    var isEv = i.fuel !== 'ice';
+    var isEv = fuel === 'ev';
     var kwCapEff = isEv ? R.rf.utilPref.kwCapEv : R.rf.kwCap.value;
     var eligible = pers && kw <= kwCapEff
                    && i.importedLastYear !== 'yes'
@@ -187,7 +195,7 @@
       duty: duty, dutyMode: dmode, excise: excise, vat: vat, fee: fee,
       util: util, utilCommercial: utilC, utilSurcharge: surcharge,
       utilEligible: eligible, utilK: kL, utilKCommercial: kC,
-      kw: kw, kwDoc: kwDoc, kwSource: kwSource, kwCap: kwCapEff,
+      kw: kw, kwDoc: kwDoc, kwSource: kwSource, kwCap: kwCapEff, hp: hp, hpEl: hpEl, fuel: fuel,
       gov: gov, costVladivostok: vvo, total: full,
       profit: profit, profitPct: pct,
       clientPrice: i.mode === 'lot' ? full + (+i.markupRub || 0) : null,
@@ -375,7 +383,7 @@
   }
 
   var API = {
-    version: '1.2',
+    version: '1.3',
     calcRU: calcRU, calcKZ: calcKZ, calcBY: calcBY,
     /* вспомогательное — нужно и интерфейсу, и публикатору */
     madeMoment: madeMoment, declDate: declDate, ageYears: ageYears,
