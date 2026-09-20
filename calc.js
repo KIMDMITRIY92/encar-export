@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════
    ENCAR EXPORT — РАСЧЁТНОЕ ЯДРО (РФ · КЗ · РБ)
-   calc.js · ред. 1.1 от 20.09.2026 (ДМ-9: кВт из л.с. по 0,7355, когда кВт не задан)
+   calc.js · ред. 1.2 от 20.09.2026 (ДМ-9 / П-3: мощность из л.с. по 0,7355, поле кВт — справочное)
 
    ЗАЧЕМ ЭТОТ ФАЙЛ СУЩЕСТВУЕТ.
    До него формулы жили внутри index.html, в трёх независимых блоках
@@ -119,10 +119,15 @@
        Пересчёт по 0,7457 давал 119,31 кВт и ложно снимал льготу. Заданный
        кВт (из СБКТС/ЭПТС) остаётся главнее пересчёта. Округление до сотых —
        как в Перечне. */
-    var kwSource = 'doc';
-    if (!(kw > 0) && hp > 0) {
+    var kwSource = 'doc', kwDoc = kw;
+    if (hp > 0) {
+      /* Правило владельца П-3 от 20.09.2026: при известных л.с. мощность
+         для льготы и коэффициента берётся ИЗ Л.С. (160 л.с. = 117,68 кВт).
+         Поле кВт — справочное: запись «117,7» в документе — это 117,68,
+         округлённые до десятых, а не другая мощность. Расхождение поля
+         кВт с пересчётом печатается флагом, но расчёт не меняет. */
       kw = Math.round(hp * ((R.rf.hpToKw && R.rf.hpToKw.value) || 0.7355) * 100) / 100;
-      kwSource = 'hp';
+      kwSource = (kwDoc > 0 && Math.abs(kwDoc - kw) > 0.005) ? 'hp-over-doc' : 'hp';
     }
     var a = ageYears(i.declISO, i.year, i.month, i.monthConfirmed !== false);
     var band = bandOf(a);
@@ -182,7 +187,7 @@
       duty: duty, dutyMode: dmode, excise: excise, vat: vat, fee: fee,
       util: util, utilCommercial: utilC, utilSurcharge: surcharge,
       utilEligible: eligible, utilK: kL, utilKCommercial: kC,
-      kw: kw, kwSource: kwSource, kwCap: kwCapEff,
+      kw: kw, kwDoc: kwDoc, kwSource: kwSource, kwCap: kwCapEff,
       gov: gov, costVladivostok: vvo, total: full,
       profit: profit, profitPct: pct,
       clientPrice: i.mode === 'lot' ? full + (+i.markupRub || 0) : null,
@@ -370,7 +375,7 @@
   }
 
   var API = {
-    version: '1.1',
+    version: '1.2',
     calcRU: calcRU, calcKZ: calcKZ, calcBY: calcBY,
     /* вспомогательное — нужно и интерфейсу, и публикатору */
     madeMoment: madeMoment, declDate: declDate, ageYears: ageYears,
