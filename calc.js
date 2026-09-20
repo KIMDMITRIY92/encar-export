@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════
    ENCAR EXPORT — РАСЧЁТНОЕ ЯДРО (РФ · КЗ · РБ)
-   calc.js · ред. 1.0 от 04.09.2026
+   calc.js · ред. 1.1 от 20.09.2026 (ДМ-9: кВт из л.с. по 0,7355, когда кВт не задан)
 
    ЗАЧЕМ ЭТОТ ФАЙЛ СУЩЕСТВУЕТ.
    До него формулы жили внутри index.html, в трёх независимых блоках
@@ -114,6 +114,16 @@
   function calcRU(i, R) {
     var usd = +i.usd || 0, eur = +i.eur || 0, krwr = +i.krwr || 0;
     var cc = +i.cc || 0, kw = +i.kw || 0, hp = +i.hp || 0;
+    /* 20.09.2026 (ДМ-9): если кВт не задан, а л.с. известны — кВт выводится
+       по метрической л.с. 0,7355 (160 л.с. = 117,68 кВт, ровно порог льготы).
+       Пересчёт по 0,7457 давал 119,31 кВт и ложно снимал льготу. Заданный
+       кВт (из СБКТС/ЭПТС) остаётся главнее пересчёта. Округление до сотых —
+       как в Перечне. */
+    var kwSource = 'doc';
+    if (!(kw > 0) && hp > 0) {
+      kw = Math.round(hp * ((R.rf.hpToKw && R.rf.hpToKw.value) || 0.7355) * 100) / 100;
+      kwSource = 'hp';
+    }
     var a = ageYears(i.declISO, i.year, i.month, i.monthConfirmed !== false);
     var band = bandOf(a);
     var log = +i.log || 0, brk = +i.brk || 0, misc = +i.misc || 0, rflog = +i.rflog || 0;
@@ -172,6 +182,7 @@
       duty: duty, dutyMode: dmode, excise: excise, vat: vat, fee: fee,
       util: util, utilCommercial: utilC, utilSurcharge: surcharge,
       utilEligible: eligible, utilK: kL, utilKCommercial: kC,
+      kw: kw, kwSource: kwSource, kwCap: kwCapEff,
       gov: gov, costVladivostok: vvo, total: full,
       profit: profit, profitPct: pct,
       clientPrice: i.mode === 'lot' ? full + (+i.markupRub || 0) : null,
@@ -359,7 +370,7 @@
   }
 
   var API = {
-    version: '1.0',
+    version: '1.1',
     calcRU: calcRU, calcKZ: calcKZ, calcBY: calcBY,
     /* вспомогательное — нужно и интерфейсу, и публикатору */
     madeMoment: madeMoment, declDate: declDate, ageYears: ageYears,
