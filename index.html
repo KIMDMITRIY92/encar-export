@@ -127,7 +127,7 @@ window.__fxStamp = function(){
   <div id="bar">
     <button data-c="rf" class="on">&#127479;&#127482; Россия</button>
     <!-- КЗ снят с расчётов решением владельца 09.09.2026; вернуть = убрать hidden -->
-    <button data-c="kz" hidden aria-hidden="true">&#127472;&#127487; Казахстан</button>
+    <button data-c="kz">&#127472;&#127487; Казахстан</button>
     <button data-c="by">&#127463;&#127486; Беларусь</button>
   </div>
 </div>
@@ -166,7 +166,8 @@ window.__fxStamp = function(){
         <div class="row"><label>Месяц выпуска</label><select id="rf-mMonth"><option value="1">01</option><option value="2">02</option><option value="3">03</option><option value="4">04</option><option value="5">05</option><option value="6">06</option><option value="7">07</option><option value="8">08</option><option value="9">09</option><option value="10">10</option><option value="11" selected>11</option><option value="12">12</option></select></div>
       </div>
       <div class="row"><label>Месяц подтверждён документом?</label><div class="seg" id="rf-mcSel"><button data-mc="yes" class="on">Да</button><button data-mc="no">Нет → 1 июля</button></div></div>
-      <div class="row"><label>Тип двигателя</label><div class="seg" id="rf-fuelSel"><button data-fuel="ice" class="on">ДВС</button><button data-fuel="hybrid">Гибрид</button><button data-fuel="ev">Электро</button></div></div>
+      <div class="row"><label>Тип двигателя</label><div class="seg" id="rf-fuelSel"><button data-fuel="ice" class="on">ДВС</button><button data-fuel="hybrid">Гибрид парал.</button><button data-fuel="ev">Электро / посл. гибрид</button></div></div>
+      <div class="row hyb-only hidden"><label>л.с. электродвигателя <span class="hint">гибрид: суммируется с ДВС (ПП № 1713)</span></label><input type="number" id="rf-hpEl" value="0"></div>
       <div class="three">
         <div class="row"><label>Объём, см³</label><input type="number" id="rf-cc" value="1999"></div>
         <div class="row"><label>кВт <span class="hint" id="rf-kwHint">= л.с. × 0,7355</span></label><input type="number" id="rf-kw" value="117.68" step="0.01"></div>
@@ -641,20 +642,21 @@ function setMode(m){state.mode=m;Array.prototype.forEach.call($("modeSel").child
   ROOT.querySelectorAll(".deal-only").forEach(function(e){e.classList.toggle("hidden",m!=="deal");});
   ROOT.querySelectorAll(".lot-only").forEach(function(e){e.classList.toggle("hidden",m!=="lot");});calc();}
 $("modeSel").addEventListener("click",function(e){var b=e.target.closest("button");if(b)setMode(b.dataset.mode);});
-segWire("fuelSel","fuel");
+segWire("fuelSel","fuel",function(){ROOT.querySelectorAll(".hyb-only").forEach(function(e){e.classList.toggle("hidden",state.fuel!=="hybrid");});syncKw();});
 function segWire(sel,key,fn){$(sel).addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;
   Array.prototype.forEach.call(e.currentTarget.children,function(x){x.classList.remove("on");});b.classList.add("on");
   state[key]=b.dataset[Object.keys(b.dataset)[0]];if(fn)fn();calc();});}
 function personalRoute(){return state.st==="personal"&&state.pu==="own";}
 function syncRoute(){ROOT.querySelectorAll(".legal-only").forEach(function(e){e.classList.toggle("hidden",personalRoute());});}
 segWire("stSel","st",syncRoute);segWire("puSel","pu",syncRoute);segWire("mcSel","mc");segWire("imSel","im");
-["buyUsd","buyKrw","log","mYear","cc","kw","hp","exRate","brk","misc","rflog","market","markupRub","fxAdd","krwr","usd","eur"].forEach(function(id){$(id).addEventListener("input",calc);});
+["buyUsd","buyKrw","log","mYear","cc","kw","hp","hpEl","exRate","brk","misc","rflog","market","markupRub","fxAdd","krwr","usd","eur"].forEach(function(id){$(id).addEventListener("input",calc);});
 /* ДМ-9 (20.09.2026): кВт по умолчанию выводится из л.с. по 0,7355 — 160 л.с. = 117,68 кВт,
    ровно порог льготы. Пересчёт 0,7457 давал 119,31 и ложно снимал льготу. Если клиент
    вписал кВт из СБКТС/ЭПТС руками — его значение главнее и больше не перезаписывается. */
 var kwManual=false;
 $("kw").addEventListener("input",function(){kwManual=(+this.value>0);$("kwHint").textContent=kwManual?"справочно":"= л.с. × 0,7355";});
-$("hp").addEventListener("input",function(){if(!kwManual){var hp=+this.value||0;$("kw").value=hp>0?(Math.round(hp*((R.rf.hpToKw&&R.rf.hpToKw.value)||0.7355)*100)/100):"";calc();}});
+function syncKw(){if(kwManual)return;var hp=(+$("hp").value||0)+(state.fuel==="hybrid"?(+$("hpEl").value||0):0);$("kw").value=hp>0?(Math.round(hp*((R.rf.hpToKw&&R.rf.hpToKw.value)||0.7355)*100)/100):"";calc();}
+$("hp").addEventListener("input",syncKw);$("hpEl").addEventListener("input",syncKw);
 $("mMonth").addEventListener("change",calc);
 ["model","myear","mileage"].forEach(function(id){$(id).addEventListener("input",function(){buildLinks();calc();});});
 /* курс не зависит от даты декларации: берётся на момент запроса расчёта */
@@ -681,7 +683,7 @@ function calc(){
     log:log, brk:brk, misc:misc, rflog:rflog,
     fxAdd:+$("fxAdd").value||0, exRate:+$("exRate").value||0,
     personal: state.st==="personal", purposeOwn: state.pu==="own",
-    importedLastYear: state.im, fuel: state.fuel,
+    importedLastYear: state.im, fuel: state.fuel, hpEl:+$("hpEl").value||0,
     market:+$("market").value||0, markupRub:+$("markupRub").value||0
   }, R);
   var a=r.age, band=r.band, pers=r.personal;
@@ -689,9 +691,9 @@ function calc(){
   var cvRub=r.priceWithMarkup, logR=r.freightWithMarkup, fxPad=r.fxMarkup;
   var duty=r.duty, dmode=r.dutyMode, excise=r.excise, vat=r.vat, fee=r.fee;
   var util=r.util, utilC=r.utilCommercial, surcharge=r.utilSurcharge;
-  var eligible=r.utilEligible, kL=r.utilK, kC=r.utilKCommercial; if(r.kw>0)kw=r.kw; /* П-3: во флагах — мощность, по которой считало ядро */
+  var eligible=r.utilEligible, kL=r.utilK, kC=r.utilKCommercial; if(r.kw>0)kw=r.kw; if(r.hp>0)hp=r.hp; /* П-3: во флагах — мощность, по которой считало ядро */
   var gov=r.gov, vvo=r.costVladivostok, full=r.total;
-  var isEv=state.fuel!=="ice";
+  var isEv=state.fuel==="ev";
   var kwCapEff=isEv?R.rf.utilPref.kwCapEv:KW_CAP;
   var html=
     '<div class="line"><span class="k">Цена в Корее</span><span class="v">'+rub(cv0)+'</span></div>'+
@@ -733,6 +735,7 @@ function calc(){
     if(b2!==band){var dd=pers?dutyPersonal(cc,b2,cvRub,eur).v:null;
       altTxt=' При подтверждении месяца категория станет «'+bandName(b2)+'»'+(dd!==null?', пошлина '+rub(dd)+' — разница '+rub(Math.abs(duty-dd)):'')+'.';}
     f+='<div class="flag amber">⚠ Месяц выпуска не подтверждён → момент выпуска принят <b>01.07.'+y+'</b> (ЕЭК № 74, п. 5). Категория: '+bandName(band)+'.'+altTxt+'</div>';}
+  if(state.fuel==="hybrid")f+='<div class="flag amber">ℹ Параллельный гибрид: мощность для утильсбора = ДВС '+(+$("hp").value||0)+' + электро '+(+$("hpEl").value||0)+' = <b>'+hp+' л.с.</b> ('+kw+' кВт); строка Перечня — по объёму '+cc+' см³ (ПП РФ № 1713). Последовательный гибрид считается кнопкой «Электро / посл. гибрид».</div>';
   if(r.kwSource==='hp-over-doc')f+='<div class="flag amber">ℹ Мощность взята из л.с.: '+hp+' л.с. = '+kw+' кВт (правило владельца П-3 от 20.09.2026). В поле кВт указано '+r.kwDoc+' — на расчёт не влияет'+(r.kwDoc>kwCapEff&&eligible?'; в СБКТС/ЭПТС должно стоять не больше '+kwCapEff+' кВт, иначе таможня начислит коммерческий '+rub(utilC):'')+'.</div>';
   if(pers&&eligible&&!isEv&&kw>kwCapEff-0.7)f+='<div class="flag amber">⚠ Мощность '+kw+' кВт — на пороге льготы ('+kwCapEff+' кВт = 160 л.с.). Льгота действует только если в СБКТС/ЭПТС стоит не больше '+kwCapEff+' кВт: запись «117,7» или «118» её снимает (утильсбор '+rub(utilC)+'). Сверить кВт по документу до оплаты.</div>';
   if(pers&&eligible)f+='<div class="flag">⚠ При продаже ранее 12 месяцев с даты ТПО доплачивается разница утильсбора до коммерческого уровня: <b>'+rub(surcharge)+'</b> по ставкам на день расчёта.</div>';
@@ -947,7 +950,8 @@ function calc(){
   if(state.mc==="no"){const y=+$("mYear").value||0,mm=+$("mMonth").value||7;
     const a2=(declDate()-new Date(y,mm-1,15))/(365.2425*24*3600*1000),b2=bandOf(a2);
     f+='<div class="flag amber">⚠ Месяц выпуска не подтверждён → момент выпуска принят <b>01.07.'+y+'</b> (ЕЭК № 74, п. 5). Категория: '+bandName(band)+(b2!==band?'. При подтверждении месяца станет «'+bandName(b2)+'»':'')+'.</div>';}
-  const ay=2026-(+$("mYear").value||0);
+  const ay=declDate().getFullYear()-(+$("mYear").value||0);
+  if(ay>=3&&reg<500*MRP)f+='<div class="flag amber">⚠ О-44: по календарному году выпуска ('+ay+' лет включая год выпуска — трактовка Kolesa.kz от 24.12.2025 по ст. 615 НК РК) регистрационный сбор может быть <b>500 МРП = '+tg_(500*MRP)+'</b>. В расчёте '+tg_(reg)+' — возраст от даты изготовления (правило П-2). Разница <b>'+tg_(500*MRP-reg)+'</b> подтверждается брокером в Казахстане ДО оплаты клиентом.</div>';
   if(ay>3)f+='<div class="flag">🔴 Возраст по году выпуска '+ay+' → регистрационный сбор <b>500 МРП = '+tg_(500*MRP)+'</b> (ст. 615 п. 4 НК РК). Крупнейшая статья Казахстана. Фильтр закупа: строго до 3 лет по году выпуска.</div>';
   if(requal)f+='<div class="flag">🔴 ПЕРЕКВАЛИФИКАЦИЯ. За 12 месяцев на это физлицо уже ввозили автомобиль, поэтому вторая машина не является товаром для личного пользования (Приказ Министра финансов РК от 31.03.2015 № 250, крит. «более 1 единицы в год»). Расчёт автоматически переведён на коммерческий контур: ЕТТ + НДС 16%. Это не запрет ввоза, а другой порядок начисления.</div>';
   if(pers)f+='<div class="flag amber">⚠ Правило «не более 1 автомобиля на физлицо за 12 месяцев» — Приказ Минфина РК № 250 от 31.03.2015 (действует с 02.05.2015). С сентября 2026 усилено администрирование. Смежный критерий: пересечение границы физлицом не чаще 1 раза в месяц.</div>';
