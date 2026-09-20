@@ -169,8 +169,8 @@ window.__fxStamp = function(){
       <div class="row"><label>Тип двигателя</label><div class="seg" id="rf-fuelSel"><button data-fuel="ice" class="on">ДВС</button><button data-fuel="hybrid">Гибрид</button><button data-fuel="ev">Электро</button></div></div>
       <div class="three">
         <div class="row"><label>Объём, см³</label><input type="number" id="rf-cc" value="1999"></div>
-        <div class="row"><label>кВт <span class="hint">из СТС</span></label><input type="number" id="rf-kw" value="117.68" step="0.01"></div>
-        <div class="row"><label>л.с. <span class="hint">акциз</span></label><input type="number" id="rf-hp" value="160"></div>
+        <div class="row"><label>кВт <span class="hint" id="rf-kwHint">= л.с. × 0,7355</span></label><input type="number" id="rf-kw" value="117.68" step="0.01"></div>
+        <div class="row"><label>л.с. <span class="hint">из карточки</span></label><input type="number" id="rf-hp" value="160"></div>
       </div>
 
       <div class="ctitle" style="margin-top:6px"><span class="n">3</span>Статус, цель, история</div>
@@ -649,6 +649,12 @@ function personalRoute(){return state.st==="personal"&&state.pu==="own";}
 function syncRoute(){ROOT.querySelectorAll(".legal-only").forEach(function(e){e.classList.toggle("hidden",personalRoute());});}
 segWire("stSel","st",syncRoute);segWire("puSel","pu",syncRoute);segWire("mcSel","mc");segWire("imSel","im");
 ["buyUsd","buyKrw","log","mYear","cc","kw","hp","exRate","brk","misc","rflog","market","markupRub","fxAdd","krwr","usd","eur"].forEach(function(id){$(id).addEventListener("input",calc);});
+/* ДМ-9 (20.09.2026): кВт по умолчанию выводится из л.с. по 0,7355 — 160 л.с. = 117,68 кВт,
+   ровно порог льготы. Пересчёт 0,7457 давал 119,31 и ложно снимал льготу. Если клиент
+   вписал кВт из СБКТС/ЭПТС руками — его значение главнее и больше не перезаписывается. */
+var kwManual=false;
+$("kw").addEventListener("input",function(){kwManual=(+this.value>0);$("kwHint").textContent=kwManual?"из документа":"= л.с. × 0,7355";});
+$("hp").addEventListener("input",function(){if(!kwManual){var hp=+this.value||0;$("kw").value=hp>0?(Math.round(hp*((R.rf.hpToKw&&R.rf.hpToKw.value)||0.7355)*100)/100):"";}});
 $("mMonth").addEventListener("change",calc);
 ["model","myear","mileage"].forEach(function(id){$(id).addEventListener("input",function(){buildLinks();calc();});});
 /* курс не зависит от даты декларации: берётся на момент запроса расчёта */
@@ -727,6 +733,7 @@ function calc(){
     if(b2!==band){var dd=pers?dutyPersonal(cc,b2,cvRub,eur).v:null;
       altTxt=' При подтверждении месяца категория станет «'+bandName(b2)+'»'+(dd!==null?', пошлина '+rub(dd)+' — разница '+rub(Math.abs(duty-dd)):'')+'.';}
     f+='<div class="flag amber">⚠ Месяц выпуска не подтверждён → момент выпуска принят <b>01.07.'+y+'</b> (ЕЭК № 74, п. 5). Категория: '+bandName(band)+'.'+altTxt+'</div>';}
+  if(pers&&eligible&&!isEv&&kw>kwCapEff-0.7)f+='<div class="flag amber">⚠ Мощность '+kw+' кВт — на пороге льготы ('+kwCapEff+' кВт = 160 л.с.). Льгота действует только если в СБКТС/ЭПТС стоит не больше '+kwCapEff+' кВт: запись «117,7» или «118» её снимает (утильсбор '+rub(utilC)+'). Сверить кВт по документу до оплаты.</div>';
   if(pers&&eligible)f+='<div class="flag">⚠ При продаже ранее 12 месяцев с даты ТПО доплачивается разница утильсбора до коммерческого уровня: <b>'+rub(surcharge)+'</b> по ставкам на день расчёта.</div>';
   if(pers&&!eligible){var why=[];if(kw>kwCapEff)why.push("мощность "+kw+" кВт > "+kwCapEff);
     if(!isEv&&cc>R.rf.utilPref.ccMax)why.push("объём "+cc+" см³ > "+R.rf.utilPref.ccMax+" см³");if(state.im==="yes")why.push("за 12 мес уже ввозили авто");
