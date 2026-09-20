@@ -653,7 +653,7 @@ segWire("stSel","st",syncRoute);segWire("puSel","pu",syncRoute);segWire("mcSel",
    ровно порог льготы. Пересчёт 0,7457 давал 119,31 и ложно снимал льготу. Если клиент
    вписал кВт из СБКТС/ЭПТС руками — его значение главнее и больше не перезаписывается. */
 var kwManual=false;
-$("kw").addEventListener("input",function(){kwManual=(+this.value>0);$("kwHint").textContent=kwManual?"из документа":"= л.с. × 0,7355";});
+$("kw").addEventListener("input",function(){kwManual=(+this.value>0);$("kwHint").textContent=kwManual?"справочно":"= л.с. × 0,7355";});
 $("hp").addEventListener("input",function(){if(!kwManual){var hp=+this.value||0;$("kw").value=hp>0?(Math.round(hp*((R.rf.hpToKw&&R.rf.hpToKw.value)||0.7355)*100)/100):"";calc();}});
 $("mMonth").addEventListener("change",calc);
 ["model","myear","mileage"].forEach(function(id){$(id).addEventListener("input",function(){buildLinks();calc();});});
@@ -733,6 +733,7 @@ function calc(){
     if(b2!==band){var dd=pers?dutyPersonal(cc,b2,cvRub,eur).v:null;
       altTxt=' При подтверждении месяца категория станет «'+bandName(b2)+'»'+(dd!==null?', пошлина '+rub(dd)+' — разница '+rub(Math.abs(duty-dd)):'')+'.';}
     f+='<div class="flag amber">⚠ Месяц выпуска не подтверждён → момент выпуска принят <b>01.07.'+y+'</b> (ЕЭК № 74, п. 5). Категория: '+bandName(band)+'.'+altTxt+'</div>';}
+  if(r.kwSource==='hp-over-doc')f+='<div class="flag amber">ℹ Мощность взята из л.с.: '+hp+' л.с. = '+kw+' кВт (правило владельца П-3 от 20.09.2026). В поле кВт указано '+r.kwDoc+' — на расчёт не влияет'+(r.kwDoc>kwCapEff&&eligible?'; в СБКТС/ЭПТС должно стоять не больше '+kwCapEff+' кВт, иначе таможня начислит коммерческий '+rub(utilC):'')+'.</div>';
   if(pers&&eligible&&!isEv&&kw>kwCapEff-0.7)f+='<div class="flag amber">⚠ Мощность '+kw+' кВт — на пороге льготы ('+kwCapEff+' кВт = 160 л.с.). Льгота действует только если в СБКТС/ЭПТС стоит не больше '+kwCapEff+' кВт: запись «117,7» или «118» её снимает (утильсбор '+rub(utilC)+'). Сверить кВт по документу до оплаты.</div>';
   if(pers&&eligible)f+='<div class="flag">⚠ При продаже ранее 12 месяцев с даты ТПО доплачивается разница утильсбора до коммерческого уровня: <b>'+rub(surcharge)+'</b> по ставкам на день расчёта.</div>';
   if(pers&&!eligible){var why=[];if(kw>kwCapEff)why.push("мощность "+kw+" кВт > "+kwCapEff);
