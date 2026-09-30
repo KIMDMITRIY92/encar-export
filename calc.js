@@ -112,7 +112,76 @@
        fuel                  'ice' | 'hybrid' (параллельный) | 'ev' (электро, последовательный гибрид)
        hpEl                  л.с. электродвигателя — только для 'hybrid', суммируется с hp
        market, markupRub     для вердикта                            */
+  /* ══════════════ РОССИЯ · ГРУЗОВЫЕ N1 (ПИКАПЫ) ═══════════════════
+     Введено 30.09.2026 по решению владельца (пикапы до 2 000 см³, до 3 лет,
+     расчёт только по России). Физлицо ввозит 8704 21/31 НЕ по единой
+     ставке, а совокупным таможенным платежом: Решение Совета ЕЭК № 107,
+     прил. 2, табл. 2, п. 1 абз. 4 (ред. Решения № 123 от 19.08.2022) —
+     «грузовые с полной массой до 5 т … 8704 21, 8704 31 …» → СТП.
+     · пошлина ЕТТ (Решение Совета ЕЭК № 80): дизель 10%, бензин 15%;
+       б/у 5–7 лет дизель — не менее 0,13 €/см³; старше 7 лет — 1 €/см³;
+     · акциз 0 — ст. 181 НК РФ облагает только легковые;
+     · НДС 22% от (стоимость + пошлина) — ст. 160, 164 НК РФ;
+     · утильсбор — раздел II Перечня к ПП РФ № 1291, база 150 000 ₽,
+       коэффициенты по полной массе и возрасту, льготы физлицу НЕТ,
+       мощность не учитывается;
+     · таможенный сбор — та же шкала (ПП № 1637, п. 6 → п. 1).
+     База для физлица — стоимость без фрахта (ст. 266–267 ТК ЕАЭС),
+     как и в ветке легковых (ДК-01/ДК-02).
+     Вход сверх calcRU: engine 'diesel'|'gasoline', gvw — полная масса, кг
+     (не задана → ступень 2,5–3,5 т: у Ranger 2.0 и Musso 2.0 она такая). */
+  function calcRU_N1(i, R) {
+    var N = R.rf && R.rf.n1;
+    if (!N) throw new Error('справочник ставок без раздела rf.n1 — пикап не считается');
+    var usd = +i.usd || 0, eur = +i.eur || 0, krwr = +i.krwr || 0;
+    var cc = +i.cc || 0;
+    var a = ageYears(i.declISO, i.year, i.month, i.monthConfirmed !== false);
+    var band = bandOf(a);
+    var log = +i.log || 0, brk = +i.brk || 0, misc = +i.misc || 0, rflog = +i.rflog || 0;
+    var sbkts = +i.sbkts || 0;
+    var mk = 1 + ((+i.fxAdd || 0) / 100);
+    var cv0 = i.mode === 'lot' ? (+i.buyKrw || 0) * (krwr / 1000) : (+i.buyUsd || 0) * usd;
+    var log0 = log * usd, TS = cv0 + log0;
+    var cvRub = cv0 * mk, logR = log0 * mk;
+    var fxPad = (cvRub - cv0) + (logR - log0);
+
+    var diesel = i.engine === 'diesel';
+    var rate = diesel ? N.duty.diesel : N.duty.gasoline;
+    var duty, dmode;
+    if (a > 7) { duty = N.duty.old7PerCc * cc * eur; dmode = N.duty.old7PerCc + ' €/см³ (>7 лет)'; }
+    else if (a > 5 && diesel) {
+      var pp = cv0 * rate, mp = N.duty.diesel5to7MinPerCc * cc * eur;
+      duty = Math.max(pp, mp); dmode = (pp >= mp ? rate * 100 + '%' : 'мин ' + N.duty.diesel5to7MinPerCc + ' €/см³') + ' (5–7 лет)';
+    }
+    else { duty = cv0 * rate; dmode = (rate * 100) + '% (ЕТТ 8704, ' + (diesel ? 'дизель' : 'бензин') + ')'; }
+    var excise = 0;
+    var vat = (cv0 + duty + excise) * N.vat;
+    var fee = feeScale(R, cv0);
+    var gvw = +i.gvw || 0;
+    var kRow = (gvw > 0 && gvw <= 2500) ? N.util.gvwLe2500 : N.util.gvw2500to3500;
+    var kL = band === 'new' ? kRow[0] : kRow[1];
+    var util = N.util.base * kL;
+
+    var gov = duty + excise + vat + fee + util;
+    var vvo = cvRub + logR + gov + brk + misc + sbkts;
+    var full = vvo + rflog;
+    return {
+      country: 'RU', currency: 'RUB', vclass: 'n1',
+      age: a, band: band, bandName: bandName(band), personal: true,
+      priceLocal: cv0, freight: log0, customsValue: TS,
+      fxMarkup: fxPad, priceWithMarkup: cvRub, freightWithMarkup: logR,
+      duty: duty, dutyMode: dmode, excise: excise, vat: vat, fee: fee, sbkts: sbkts,
+      util: util, utilCommercial: util, utilSurcharge: 0,
+      utilEligible: false, utilK: kL, utilKCommercial: kL,
+      gvwBand: (gvw > 0 && gvw <= 2500) ? '≤2,5 т' : '2,5–3,5 т',
+      gov: gov, costVladivostok: vvo, total: full,
+      profit: null, profitPct: null,
+      clientPrice: i.mode === 'lot' ? full + (+i.markupRub || 0) : null,
+    };
+  }
+
   function calcRU(i, R) {
+    if (i.vclass === 'n1') return calcRU_N1(i, R);
     var usd = +i.usd || 0, eur = +i.eur || 0, krwr = +i.krwr || 0;
     var cc = +i.cc || 0, kw = +i.kw || 0, hp = +i.hp || 0, hpEl = +i.hpEl || 0;
     /* Тип силовой установки (решение владельца 20.09.2026, вариант 1 по гибридам):
