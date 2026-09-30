@@ -27,6 +27,14 @@ window.ENCAR_RATES = {
 
   /* ── РОССИЯ ── */
   rf:{
+    /* 30.09.2026 — ГРУЗОВЫЕ N1 (пикапы), физлицо, совокупный таможенный платёж.
+       Используется только calcRU при vclass:'n1'. Легковых не касается. */
+    n1:{ _source:"Решение Совета ЕЭК № 107, прил. 2, табл. 2, п. 1 абз. 4 (СТП для 8704 21/31); ЕТТ ЕАЭС (Решение Совета ЕЭК № 80): 8704 21 9x — 10%, 8704 31 9x — 15%; ст. 181, 160, 164 НК РФ; раздел II Перечня к ПП РФ № 1291 (коэф. 2026 по ПП № 1255)",
+         checked_at:"2026-09-30", requires_verification:true,
+         _note:"сверено с backend /api/customs (vehicle_class: pickup) до рубля на Ranger 2025: пошлина 260 734, НДС 630 977, утиль 990 000; таблица раздела II дословно ещё не снята (роль № 02)",
+         duty:{ diesel:0.10, gasoline:0.15, diesel5to7MinPerCc:0.13, old7PerCc:1.0 },
+         vat:0.22,
+         util:{ base:150000, gvwLe2500:[6.13, 8.91], gvw2500to3500:[6.60, 9.61] } },
     vat:{ value:0.22, _source:"ФЗ от 28.11.2025 № 425-ФЗ, ст. 164 НК РФ", checked_at:"2026-09-02", requires_verification:false },
     utilBase:{ value:20000, unit:"RUB", _source:"ПП РФ от 26.12.2013 № 1291, ред. 06.02.2026", checked_at:"2026-09-02", requires_verification:false },
     kwCap:{ value:117.68, unit:"kW", _source:"сноска <6> раздела I Перечня к ПП РФ № 1291 (=160 л.с.)", checked_at:"2026-09-02", requires_verification:false },
