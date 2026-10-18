@@ -233,7 +233,7 @@ window.__fxStamp = function(){
   <div class="grid">
     <div class="card">
       <div class="ctitle"><span class="n">1</span>Автомобиль и таможенная база</div>
-      <div class="row"><label>Источник таможенной базы</label><div class="seg" id="kz-srcSel"><button data-src="grid" class="on">Сетка КГД</button><button data-src="manual">Вручную</button><button data-src="invoice">Инвойс + фрахт</button></div></div>
+      <div class="row"><label>Источник таможенной базы</label><div class="seg" id="kz-srcSel"><button data-src="invoice" class="on">Инвойс + фрахт</button><button data-src="manual">Вручную</button></div></div>
       <div id="kz-gridBox">
         <div class="three">
           <div class="row"><label>Марка</label><select id="kz-brand"></select></div>
@@ -790,7 +790,7 @@ function ettMin(cc,old7){return window.ENCAR_CALC.ettMin(R,cc,old7);}
 const TR={"А":"a","Б":"b","В":"v","Г":"g","Д":"d","Е":"e","Ж":"zh","З":"z","И":"i","Й":"y","К":"k","Л":"l","М":"m","Н":"n","О":"o","П":"p","Р":"r","С":"s","Т":"t","У":"u","Ф":"f","Х":"h","Ц":"ts","Ч":"ch","Ш":"sh","Щ":"sch","Ы":"y","Э":"e","Ю":"yu","Я":"ya"};
 function kslug(s){return String(s||"").toUpperCase().split("").map(function(c){return TR[c]!==undefined?TR[c]:c;}).join("").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");}
 const PFX="kz-";const ROOT=document.getElementById("sec-kz");const $=id=>document.getElementById(PFX+id);
-const state={src:"grid",st:"personal",rt:"direct",mc:"yes",im:"no",cur:"usd",fuel:"ice"};
+const state={src:"invoice",st:"personal",rt:"direct",mc:"yes",im:"no",cur:"usd",fuel:"ice"};
 const nf=n=>Math.round(n).toLocaleString("ru-RU");
 const tg_=n=>nf(n)+" ₸";
 function todayISO(){return new Date().toISOString().slice(0,10);}
@@ -878,7 +878,7 @@ function bandName(b){return b==="new"?"до 3 лет":b==="mid"?"3–5 лет":"
 function segWire(sel,key,fn){$(sel).addEventListener("click",function(e){const b=e.target.closest("button");if(!b)return;
   Array.prototype.forEach.call(e.currentTarget.children,function(x){x.classList.remove("on");});b.classList.add("on");
   state[key]=b.dataset[Object.keys(b.dataset)[0]];if(fn)fn();calc();});}
-segWire("srcSel","src",function(){const g=state.src==="grid";$("gridBox").style.display=g?"block":"none";$("manualBox").style.display=state.src==="manual"?"block":"none";});
+segWire("srcSel","src",function(){$("manualBox").style.display=state.src==="manual"?"block":"none";});
 segWire("stSel","st",function(){ROOT.querySelectorAll(".pers-only").forEach(function(e){e.classList.toggle("hidden",state.st!=="personal");});});
 segWire("rtSel","rt");segWire("mcSel","mc");segWire("imSel","im");
 segWire("curSel","cur",function(){ROOT.querySelectorAll(".cur-usd").forEach(function(e){e.classList.toggle("hidden",state.cur!=="usd");});ROOT.querySelectorAll(".cur-krw").forEach(function(e){e.classList.toggle("hidden",state.cur!=="krw");});});
@@ -902,11 +902,9 @@ function calc(){
   const requal = state.st==="personal" && state.im==="yes";   /* О-31: переквалификация */
   const pers = state.st==="personal" && !requal;
   let baseUSD=0, gnote="", estimated=false;
-  if(state.src==="grid"){const g=gridPrice();
-    if(g){baseUSD=g.price;gnote=g.note;estimated=!g.exact;}else{gnote="нет в сетке — переключи на «Вручную»";}
-    $("gridNote").textContent="Таможенная база: $"+nf(baseUSD)+" ("+gnote+")";}
-  else if(state.src==="manual"){baseUSD=+$("manualUsd").value||0;gnote="ручной ввод";}
+  if(state.src==="manual"){baseUSD=+$("manualUsd").value||0;gnote="ручной ввод";}
   else{baseUSD=buy+fracht;gnote="инвойс + фрахт, курс НБ РК";}
+  $("gridNote").textContent="Таможенная стоимость — по инвойсу (закуп + фрахт). Марка/модель/объём: подставляют объём двигателя и дают ссылки на рынок, базой не служат.";
   /* ФОРМУЛЫ — в calc.js (см. комментарий у российского блока). Здесь
      остаётся выбор таможенной базы: он завязан на интерфейс (сетка /
      ручной ввод / инвойс), поэтому вычисляется до вызова ядра. */
